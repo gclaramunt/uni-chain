@@ -37,13 +37,12 @@ class LedgerDB[F[_]: MonadCancelThrow](xa: Transactor[F]):
   implicit val blockRead: Read[Block] = Read[(Long, Hash, Sig)].map:
     case (id, previousHash, signature) => Block(id, Seq.empty[Transaction], previousHash, signature)
 
-  def getLastBlock(): F[Option[Block]] = 
+  def getLastBlock: F[Block] = 
     sql"SELECT id, previous, current FROM blocks order by id desc limit 1"
-      .query[Block]
-      .option
+      .query[Block].unique
       .transact(xa)
 
-  def getTransactions(): fs2.Stream[F, Transaction] = 
+  def getTransactions: fs2.Stream[F, Transaction] = 
     sql"SELECT source, destination, amount, signature, hash, nonce FROM transactions"
       .query[Transaction]
       .stream
