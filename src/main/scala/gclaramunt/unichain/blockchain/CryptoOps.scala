@@ -1,22 +1,22 @@
 package gclaramunt.unichain.blockchain
 
-import gclaramunt.unichain.blockchain.CryptoTypes.Hash
+import gclaramunt.unichain.blockchain.CryptoTypes.{Hash, Sig}
 import org.bouncycastle.jcajce.provider.digest.SHA3.DigestSHA3
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.util.encoders.Hex
+import org.bouncycastle.asn1.pkcs.PrivateKeyInfo
 
+import java.security.{KeyFactory, KeyPairGenerator, KeyStore, PrivateKey, PublicKey, Security, Signature}
+import org.bouncycastle.openssl.PEMParser
+import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter
+
+import java.io.StringReader
 import java.io.FileInputStream
-import java.security.{KeyPairGenerator, KeyStore, PrivateKey, Security, Signature}
+import java.security.spec.PKCS8EncodedKeySpec
+import java.util.Base64
+import scala.util.Try
 
-object CryptoOps {
-
-  val keystorePassword = System.getenv("KEYSTORE_PASSWORD")
-
-  def hash(input: String): Hash = 
-    val digest = new DigestSHA3(256)
-    val hashBytes = digest.digest(input.getBytes("UTF-8"))
-    Hash(Hex.toHexString(hashBytes))
-
+object CryptoOps:
 
   // Add Bouncy Castle as a security provider
   Security.addProvider(new BouncyCastleProvider())
@@ -28,35 +28,40 @@ object CryptoOps {
 //    (keyPair.getPrivate, keyPair.getPublic)
 //  }
 
-  def sign(data: Array[Byte], privateKey: PrivateKey): Array[Byte] = 
-    val signature = Signature.getInstance("SHA256withRSA", "BC")
+  def hash(input: String): Hash =
+    val digest = new DigestSHA3(256)
+    val hashBytes = digest.digest(input.getBytes("UTF-8"))
+    Hash(Hex.toHexString(hashBytes))
+
+  def sign(data: Array[Byte], privateKey: PrivateKey): Array[Byte] =
+    val signature = Signature.getInstance("SHA256withECDSA", "BC")
     signature.initSign(privateKey)
     signature.update(data)
-    signature.sign()
+    signature.sign
+
+  def validate(data: Array[Byte], signed: Array[Byte], pubKey: PublicKey): Try[Boolean] =
+    val signature = Signature.getInstance("SHA256withECDSA", "BC")
+    signature.initVerify(pubKey)
+    signature.update(data)
+    Try { signature.verify(signed) }
 
 
-  println(s"Signed hash: ${Hex.toHexString(signedHash)}")
+  def loadPrivateKeyFromEnv (envVariable: String): PrivateKey=
+    val pemKey = sys.env.getOrElse(envVariable, throw new IllegalArgumentException(s"Environment variable $envVariable is not set or is empty."))
 
-  def loadPrivateKey(keystorePath: String, keystorePassword: String, keyAlias: String, keyPassword: String): PrivateKey = {
-    val keystore = KeyStore.getInstance("PKCS12")
-    val keystoreInputStream = new FileInputStream(keystorePath)
-    keystore.load(keystoreInputStream, keystorePassword.toCharArray)
-    keystoreInputStream.close()
+    // Strip the PEM headers and footers
+    val privateKeyPEM = pemKey.replace("-----BEGIN PRIVATE KEY-----", "")
+      .replace("-----END PRIVATE KEY-----", "")
+      .replaceAll("\\s+", "")
 
-    keystore.getKey(keyAlias, keyPassword.toCharArray).asInstanceOf[PrivateKey]
-  }
+    // Decode the base64 string to get the binary DER format
+    val keyBytes = Base64.getDecoder.decode(privateKeyPEM)
 
-  // Example usage
-  val keystorePath = "/path/to/your/keystore.p12"
-  val keyAlias = "myKeyAlias"
-  val keyPassword = "keyPassword"
+    // Convert the key bytes into a PrivateKey object
+    val keySpec = new PKCS8EncodedKeySpec(keyBytes)
+    val keyFactory = KeyFactory.getInstance("EC", "BC")
+    keyFactory.generatePrivate(keySpec)
+  
+  lazy val privateKey: PrivateKey = loadPrivateKeyFromEnv("PRIVATE_KEY")
 
-  val privateKey = loadPrivateKey(keystorePath, keystorePassword, keyAlias, keyPassword)
 
-  // Assume we have a hash from a previous step
-  val hashToSign = Hex.decode("5f61c92b675b1a5c82a34cddad910b15d749867ef539d56d0dedb608789c0967")
-
-  val signedHash = sign(hashToSign, privateKey)
-  println(s"Signed hash: ${Hex.toHexString(signedHash)}")
-
-}
