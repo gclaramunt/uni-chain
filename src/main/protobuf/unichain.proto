@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+service UniChainService {
+  rpc SayHello (HelloRequest) returns (HelloResponse);
+}
+
+message HelloRequest {
+  string greeting = 1;
+}
+
+message HelloResponse {
+  string reply = 1;
+}
+
+//
+//    Transaction:
+//    ○ Source, destination addresses for moving funds
+//    ○ Amount being transferred
+//    ○ Signature from the source signing the hash of all data within the transaction
+//    corresponding to the correct source address private key.
+//    ○ Hash of the transaction should be what is being signed by the signature.
+//    ○ Nonce or ordinal associated with the number of sequential transactions used for
+//    the source address, monotonically increasing and used to prevent duplicate
+//    replay transactions.
