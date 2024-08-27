@@ -2,6 +2,7 @@ package gclaramunt.unichain.blockchain
 
 import gclaramunt.unichain.blockchain.CryptoTypes.{Address, Hash, Sig}
 
+import java.nio.ByteBuffer
 import scala.annotation.targetName
 
 
@@ -15,7 +16,7 @@ object CryptoTypes {
 
   opaque type Hash = Array[Byte]
   object Hash:
-    def apply(s: String): Hash = s.getBytes
+    //def apply(s: String): Hash = s.getBytes
     def apply(s: Array[Byte]): Hash = s
     def value(s: Hash): Array[Byte] = s
 
@@ -27,6 +28,12 @@ object CryptoTypes {
     def apply(s: Array[Byte]): Sig = s
     def value(s: Sig): Array[Byte] = s
 
+
+  def longToBytes(x: Long): Array[Byte] = {
+    val buffer = ByteBuffer.allocate(java.lang.Long.BYTES)
+    buffer.putLong(x)
+    buffer.array
+  }
 }
 
 /*

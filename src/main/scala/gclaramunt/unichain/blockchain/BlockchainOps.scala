@@ -2,7 +2,8 @@ package gclaramunt.unichain.blockchain
 
 import gclaramunt.unichain.Config
 import gclaramunt.unichain.Config.CryptoConfig
-import gclaramunt.unichain.blockchain.CryptoTypes.{Address, Hash, Sig}
+import gclaramunt.unichain.blockchain.BlockchainOps.blockHash
+import gclaramunt.unichain.blockchain.CryptoTypes.{Address, Hash, Sig, longToBytes}
 import gclaramunt.unichain.blockchain.CryptoOps.{decodePEMKeys, hash, sign}
 
 import java.security.{KeyFactory, PublicKey}
@@ -13,19 +14,20 @@ import scala.util.Try
 class BlockchainOps(pemKey: String):
   
   val (privateKey, publicKey) = decodePEMKeys(pemKey)
-  
-  def blockHash(block: Block): Hash =
-    hash(s"${block.id}${block.txs.map(_.hash)}")
 
   def newBlock(prevBlock: Block, memPool: Seq[Transaction]): Block =
-    val prevBlockHash = blockHash(prevBlock)
-    val newBlockHash = blockHash(prevBlock)
-    val hash = prevBlockHash + newBlockHash
-    val signature = Sig(sign(Hash.value(hash), privateKey))
-    Block(prevBlock.id+1, memPool, prevBlockHash, signature)
+    
+    //TODO validate previous block
+    
+    val newId = prevBlock.id+1
+    val prevBlockHash = blockHash(prevBlock.id, prevBlock.txs)
+    val newBlockHash = blockHash(newId, memPool)
+    val hashData = Hash.value(prevBlockHash) ++ Hash.value(newBlockHash)
+    val signature = sign(Hash.value(hash(hashData)), privateKey)
+    Block(newId, memPool, prevBlockHash, signature)
 
   def validate(tx: Transaction): Try[Boolean] =
-    CryptoOps.validate(Hash.value(tx.hash), Sig.value(tx.signature), addressToPubKey(tx.source))
+    CryptoOps.validate(Hash.value(tx.hash), tx.signature, addressToPubKey(tx.source))
 
 
   def addressToPubKey(address: Address): PublicKey =
@@ -36,4 +38,8 @@ class BlockchainOps(pemKey: String):
     
     
 object BlockchainOps:
+
   def apply(cfg: CryptoConfig) = new BlockchainOps(cfg.privateKey)
+
+  def blockHash(id: Long, txs: Seq[Transaction]): Hash =
+    Hash(longToBytes(id) ++ txs.flatMap(t => Hash.value(t.hash)))
