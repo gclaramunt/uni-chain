@@ -7,7 +7,7 @@ import org.bouncycastle.util.encoders.Hex
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo
 
 import java.security.{KeyFactory, KeyPairGenerator, KeyStore, PrivateKey, PublicKey, Security, Signature}
-import org.bouncycastle.openssl.PEMParser
+import org.bouncycastle.openssl.{PEMKeyPair, PEMParser}
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter
 
 import java.io.StringReader
@@ -48,6 +48,23 @@ object CryptoOps:
 
   def loadPrivateKeyFromEnv (envVariable: String): PrivateKey=
     val pemKey = sys.env.getOrElse(envVariable, throw new IllegalArgumentException(s"Environment variable $envVariable is not set or is empty."))
+    decodePEMPrivateKey(pemKey)
+
+
+  def decodePEMPrivateKey(pemKey: String): PrivateKey =
+    val keyReader = new StringReader(pemKey)
+    // Convert the key bytes into a PrivateKey object
+    val pemParser = new PEMParser(keyReader)
+    val converter = new JcaPEMKeyConverter()
+    val keypair: PEMKeyPair = pemParser.readObject().asInstanceOf[PEMKeyPair]
+    val keyBytes = keypair.getPrivateKeyInfo.getPrivateKey.getOctets
+    val keySpec = new PKCS8EncodedKeySpec(keyBytes)
+    val keyFactory = KeyFactory.getInstance("EC", "BC")
+    keyFactory.generatePrivate(keySpec)
+
+
+  def loadPrivateKeyFromEnv1(envVariable: String): PrivateKey =
+    val pemKey = sys.env.getOrElse(envVariable, throw new IllegalArgumentException(s"Environment variable $envVariable is not set or is empty."))
 
     // Strip the PEM headers and footers
     val privateKeyPEM = pemKey.replace("-----BEGIN PRIVATE KEY-----", "")
@@ -61,6 +78,9 @@ object CryptoOps:
     val keySpec = new PKCS8EncodedKeySpec(keyBytes)
     val keyFactory = KeyFactory.getInstance("EC", "BC")
     keyFactory.generatePrivate(keySpec)
+
+
+
   
   lazy val privateKey: PrivateKey = loadPrivateKeyFromEnv("PRIVATE_KEY")
 
