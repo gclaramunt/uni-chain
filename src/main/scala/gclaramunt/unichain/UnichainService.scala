@@ -33,10 +33,10 @@ class UnichainService[F[_] : MonadCancelThrow](refs: Ref[F, (Block, Map[Address,
             if (updatedMemPool.size < Config.TransactionsPerBlock) {
               ((lastBlock, updatedBalances, updatedMemPool), ledgerDB.addTransaction(lastBlock.id, updatedMemPool).map(_ => ()))
             } else {
-              val newBlock = newBlock(lastBlock, updatedMemPool)
+              val newBlock = BlockchainOps.newBlock(lastBlock, updatedMemPool)
               val dbUpdate = for {
                 _ <- ledgerDB.addBlock(newBlock)
-                _ <- ledgerDB.addTransaction(newBlock, updatedMemPool)
+                _ <- ledgerDB.addTransaction(newBlock.id, updatedMemPool)
               } yield ()
               ((newBlock, updatedBalances, Seq()), dbUpdate)
             }
