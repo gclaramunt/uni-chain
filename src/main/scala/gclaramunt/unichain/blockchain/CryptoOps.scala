@@ -1,6 +1,7 @@
 package gclaramunt.unichain.blockchain
 
 import gclaramunt.unichain.blockchain.CryptoTypes.{Hash, Sig}
+import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
 import org.bouncycastle.jcajce.provider.digest.SHA3.DigestSHA3
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter
@@ -46,6 +47,17 @@ object CryptoOps:
       case keyPair: PEMKeyPair => 
         (converter.getPrivateKey(keyPair.getPrivateKeyInfo), 
         converter.getPublicKey(keyPair.getPublicKeyInfo))
+      case _ => throw new IllegalArgumentException("Unsupported key format")
+
+  def addressToPubKey(pemKey: String): (PublicKey) =
+    val pemParser = new PEMParser(new StringReader(pemKey))
+    val pemObject = pemParser.readObject()
+    pemParser.close()
+
+    val converter = new JcaPEMKeyConverter().setProvider("BC")
+    pemObject match
+      case pk: SubjectPublicKeyInfo =>
+        converter.getPublicKey(pk)
       case _ => throw new IllegalArgumentException("Unsupported key format")
 
   

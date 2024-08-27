@@ -2,7 +2,7 @@ package gclaramunt.unichain.blockchain
 
 import gclaramunt.unichain.blockchain.BlockchainOps.blockHash
 import gclaramunt.unichain.blockchain.CryptoOps.{hash, sign, validate}
-import gclaramunt.unichain.blockchain.CryptoTypes.{Hash, Sig}
+import gclaramunt.unichain.blockchain.CryptoTypes.{Address, Hash, Sig}
 import munit.FunSuite
 
 import scala.util.Try
@@ -19,15 +19,6 @@ class BlockchainOpsTest extends FunSuite:
       |""".stripMargin
     
   val bo = new BlockchainOps(prvKeyStr)
-  
-  //def newBlock(prevBlock: Block, memPool: Seq[Transaction]): Block
-  // def newBlock(prevBlock: Block, memPool: Seq[Transaction]): Block =
-  //    val newId = prevBlock.id+1
-  //    val prevBlockHash = blockHash(prevBlock.id, prevBlock.txs)
-  //    val newBlockHash = blockHash(newId, memPool)
-  //    val hashData = Hash.value(prevBlockHash) ++ Hash.value(newBlockHash)
-  //    val signature = Sig(sign(hashData, privateKey))
-  //    Block(newId, memPool, prevBlockHash, signature)
 
   test("newBlock without transactions"):
     val prevHash = BlockchainOps.blockHash(1, Seq())
@@ -47,11 +38,22 @@ class BlockchainOpsTest extends FunSuite:
   //def validate(tx: Transaction): Try[Boolean] =
   //def validate(tx: Transaction): Try[Boolean] =
   //    CryptoOps.validate(Hash.value(tx.hash), tx.signature, addressToPubKey(tx.source))
+  //source: Address, destination: Address, amount: BigDecimal, signature: Sig, hash: Hash, nonce: Long
   test("validate transaction"):
-    val tx = Transaction()
-      assertEquals(validate(hashToSign, newBlock.signature, bo.publicKey), Try {
-        true
-      })
+    val source = """-----BEGIN PUBLIC KEY-----
+                   |MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEHSAlnIFyECxFABBpY7ZLub4udfHx
+                   |CbDwvnR4RUhOqeKSo6lXMkQeH9joWEEA7kqGjCCmHaAMwfg8OAxnW/CtrA==
+                   |-----END PUBLIC KEY-----
+                   |""".stripMargin
+    val txCore = TransactionCore(Address(source), Address("45789"), BigDecimal(10.00),1)
+    val txHash = BlockchainOps.txHash(txCore)
+    val sig = sign( Hash.value(txHash), bo.privateKey)
+
+    val tx = Transaction(txCore, txHash, sig)
+
+    assertEquals(bo.validate(tx), Try {
+      true
+    })
 
   // def addressToPubKey(address: Address): PublicKey =
 
