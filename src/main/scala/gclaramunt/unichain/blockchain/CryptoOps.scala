@@ -1,33 +1,20 @@
 package gclaramunt.unichain.blockchain
 
-import gclaramunt.unichain.blockchain.CryptoTypes.{Hash, Sig}
+import gclaramunt.unichain.blockchain.CryptoTypes.Hash
 import org.bouncycastle.jcajce.provider.digest.SHA3.DigestSHA3
 import org.bouncycastle.jce.provider.BouncyCastleProvider
-import org.bouncycastle.util.encoders.Hex
-import org.bouncycastle.asn1.pkcs.PrivateKeyInfo
-
-import java.security.{KeyFactory, KeyPairGenerator, KeyStore, PrivateKey, PublicKey, Security, Signature}
-import org.bouncycastle.openssl.{PEMKeyPair, PEMParser}
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter
+import org.bouncycastle.openssl.{PEMKeyPair, PEMParser}
+import org.bouncycastle.util.encoders.Hex
 
 import java.io.StringReader
-import java.io.FileInputStream
-import java.security.spec.PKCS8EncodedKeySpec
-import java.util.Base64
+import java.security.{PrivateKey, PublicKey, Security, Signature}
 import scala.util.Try
 
 object CryptoOps:
-
   // Add Bouncy Castle as a security provider
   Security.addProvider(new BouncyCastleProvider())
-
-//  def generateKeyPair(): (PrivateKey, java.security.PublicKey) = {
-//    val keyGen = KeyPairGenerator.getInstance("RSA", "BC")
-//    keyGen.initialize(2048)
-//    val keyPair = keyGen.generateKeyPair()
-//    (keyPair.getPrivate, keyPair.getPublic)
-//  }
-
+  
   def hash(input: String): Hash =
     val digest = new DigestSHA3(256)
     val hashBytes = digest.digest(input.getBytes("UTF-8"))
@@ -46,42 +33,23 @@ object CryptoOps:
     Try { signature.verify(signed) }
 
 
-  def loadPrivateKeyFromEnv (envVariable: String): PrivateKey=
+  def loadKeysFromEnv (envVariable: String): (PrivateKey, PublicKey)=
     val pemKey = sys.env.getOrElse(envVariable, throw new IllegalArgumentException(s"Environment variable $envVariable is not set or is empty."))
-    decodePEMPrivateKey(pemKey)
+    decodePEMKeys(pemKey)
+  
+  def decodePEMKeys(pemKey: String): (PrivateKey, PublicKey) = 
+    val pemParser = new PEMParser(new StringReader(pemKey))
+    val pemObject = pemParser.readObject()
+    pemParser.close()
 
-
-  def decodePEMPrivateKey(pemKey: String): PrivateKey =
-    val keyReader = new StringReader(pemKey)
-    // Convert the key bytes into a PrivateKey object
-    val pemParser = new PEMParser(keyReader)
-    val converter = new JcaPEMKeyConverter()
-    val keypair: PEMKeyPair = pemParser.readObject().asInstanceOf[PEMKeyPair]
-    val keyBytes = keypair.getPrivateKeyInfo.getPrivateKey.getOctets
-    val keySpec = new PKCS8EncodedKeySpec(keyBytes)
-    val keyFactory = KeyFactory.getInstance("EC", "BC")
-    keyFactory.generatePrivate(keySpec)
-
-
-  def loadPrivateKeyFromEnv1(envVariable: String): PrivateKey =
-    val pemKey = sys.env.getOrElse(envVariable, throw new IllegalArgumentException(s"Environment variable $envVariable is not set or is empty."))
-
-    // Strip the PEM headers and footers
-    val privateKeyPEM = pemKey.replace("-----BEGIN PRIVATE KEY-----", "")
-      .replace("-----END PRIVATE KEY-----", "")
-      .replaceAll("\\s+", "")
-
-    // Decode the base64 string to get the binary DER format
-    val keyBytes = Base64.getDecoder.decode(privateKeyPEM)
-
-    // Convert the key bytes into a PrivateKey object
-    val keySpec = new PKCS8EncodedKeySpec(keyBytes)
-    val keyFactory = KeyFactory.getInstance("EC", "BC")
-    keyFactory.generatePrivate(keySpec)
-
-
+    val converter = new JcaPEMKeyConverter().setProvider("BC")
+    pemObject match 
+      case keyPair: PEMKeyPair => 
+        (converter.getPrivateKey(keyPair.getPrivateKeyInfo), 
+        converter.getPublicKey(keyPair.getPublicKeyInfo))
+      case _ => throw new IllegalArgumentException("Unsupported key format")
 
   
-  lazy val privateKey: PrivateKey = loadPrivateKeyFromEnv("PRIVATE_KEY")
+  
 
 
