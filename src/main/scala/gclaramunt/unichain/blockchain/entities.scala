@@ -44,8 +44,11 @@ Transaction:
    Hash of the transaction should be what is being signed by the signature.
    Nonce or ordinal associated with the number of sequential transactions used for the source address, monotonically increasing and used to prevent duplicate replay transactions.
  */
-case class Transaction(source: Address, destination: Address, amount: BigDecimal, signature: Sig, hash: Hash, nonce: Long)
-
+case class TransactionCore(source: Address, destination: Address, amount: BigDecimal, nonce: Long) 
+case class Transaction(source: Address, destination: Address, amount: BigDecimal, nonce: Long, hash: Hash,  signature: Sig)
+object Transaction {
+  def apply(core: TransactionCore, hash: Hash, sig: Sig): Transaction = new Transaction(core.source, core.destination, core.amount, core.nonce, hash, sig) 
+}
 /*
 Block:
    Collection of or sequence of transactions

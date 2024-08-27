@@ -4,7 +4,7 @@ import gclaramunt.unichain.Config
 import gclaramunt.unichain.Config.CryptoConfig
 import gclaramunt.unichain.blockchain.BlockchainOps.blockHash
 import gclaramunt.unichain.blockchain.CryptoTypes.{Address, Hash, Sig, longToBytes}
-import gclaramunt.unichain.blockchain.CryptoOps.{decodePEMKeys, hash, sign}
+import gclaramunt.unichain.blockchain.CryptoOps.{addressToPubKey, decodePEMKeys, hash, sign}
 
 import java.security.{KeyFactory, PublicKey}
 import java.security.spec.X509EncodedKeySpec
@@ -27,15 +27,8 @@ class BlockchainOps(pemKey: String):
     Block(newId, memPool, prevBlockHash, signature)
 
   def validate(tx: Transaction): Try[Boolean] =
-    CryptoOps.validate(Hash.value(tx.hash), tx.signature, addressToPubKey(tx.source))
+    CryptoOps.validate(Hash.value(tx.hash), tx.signature, addressToPubKey(Address.value(tx.source)))
 
-
-  def addressToPubKey(address: Address): PublicKey =
-    val keyBytes = Base64.getDecoder.decode(Address.value(address))
-    val keySpec = new X509EncodedKeySpec(keyBytes)
-    val keyFactory = KeyFactory.getInstance("EC", "BC")
-    keyFactory.generatePublic(keySpec)
-    
     
 object BlockchainOps:
 
@@ -43,3 +36,6 @@ object BlockchainOps:
 
   def blockHash(id: Long, txs: Seq[Transaction]): Hash =
     Hash(longToBytes(id) ++ txs.flatMap(t => Hash.value(t.hash)))
+
+  def txHash(txCore: TransactionCore): Hash =
+    Hash(Address.value(txCore.source).getBytes ++ Address.value(txCore.destination).getBytes ++ txCore.amount.toString().getBytes ++  longToBytes(txCore.nonce))
