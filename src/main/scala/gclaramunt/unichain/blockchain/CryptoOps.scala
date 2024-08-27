@@ -1,14 +1,16 @@
 package gclaramunt.unichain.blockchain
 
-import gclaramunt.unichain.blockchain.CryptoTypes.{Hash, Sig}
+import gclaramunt.unichain.blockchain.CryptoTypes.{Address, Hash, Sig}
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
 import org.bouncycastle.jcajce.provider.digest.SHA3.DigestSHA3
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter
 import org.bouncycastle.openssl.{PEMKeyPair, PEMParser}
+import org.bouncycastle.util.encoders.Base64
 
 import java.io.StringReader
-import java.security.{PrivateKey, PublicKey, Security, Signature}
+import java.security.spec.X509EncodedKeySpec
+import java.security.{KeyFactory, PrivateKey, PublicKey, Security, Signature}
 import scala.util.Try
 
 object CryptoOps:
@@ -49,18 +51,16 @@ object CryptoOps:
         converter.getPublicKey(keyPair.getPublicKeyInfo))
       case _ => throw new IllegalArgumentException("Unsupported key format")
 
-  def addressToPubKey(pemKey: String): (PublicKey) =
-    val pemParser = new PEMParser(new StringReader(pemKey))
-    val pemObject = pemParser.readObject()
-    pemParser.close()
+  def addressToPubKey(publicKeyStr: Address): PublicKey =
+    val decodedBytes = Base64.decode(Address.value(publicKeyStr))
 
-    val converter = new JcaPEMKeyConverter().setProvider("BC")
-    pemObject match
-      case pk: SubjectPublicKeyInfo =>
-        converter.getPublicKey(pk)
-      case _ => throw new IllegalArgumentException("Unsupported key format")
+    // Convert the bytes back to a PublicKey object
+    val keySpec = new X509EncodedKeySpec(decodedBytes)
+    val keyFactory = KeyFactory.getInstance("EC")
+    keyFactory.generatePublic(keySpec)
 
-  
-  
+  def pubKeyToAddress(pubKey: PublicKey): Address =
+     // Encode the bytes to a Base64 string
+     Address(Base64.toBase64String(pubKey.getEncoded))
 
 

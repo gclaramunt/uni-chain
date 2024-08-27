@@ -1,7 +1,7 @@
 package gclaramunt.unichain.blockchain
 
 import gclaramunt.unichain.blockchain.BlockchainOps.blockHash
-import gclaramunt.unichain.blockchain.CryptoOps.{hash, sign, validate}
+import gclaramunt.unichain.blockchain.CryptoOps.{hash, pubKeyToAddress, sign, validate}
 import gclaramunt.unichain.blockchain.CryptoTypes.{Address, Hash, Sig}
 import munit.FunSuite
 
@@ -32,20 +32,12 @@ class BlockchainOpsTest extends FunSuite:
     val newBlock = bo.newBlock(previous, Seq.empty)
     assertEquals(newBlock.id, 2L)
     assertEquals(Hash.value(newBlock.previousHash).toSeq, Hash.value(prevHash).toSeq)
-    assertEquals(validate(hashToSign, newBlock.signature, bo.publicKey), Try { true})
+    assertEquals(validate(hashToSign, newBlock.signature, bo.publicKey), Try {true})
 
 
-  //def validate(tx: Transaction): Try[Boolean] =
-  //def validate(tx: Transaction): Try[Boolean] =
-  //    CryptoOps.validate(Hash.value(tx.hash), tx.signature, addressToPubKey(tx.source))
-  //source: Address, destination: Address, amount: BigDecimal, signature: Sig, hash: Hash, nonce: Long
   test("validate transaction"):
-    val source = """-----BEGIN PUBLIC KEY-----
-                   |MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEHSAlnIFyECxFABBpY7ZLub4udfHx
-                   |CbDwvnR4RUhOqeKSo6lXMkQeH9joWEEA7kqGjCCmHaAMwfg8OAxnW/CtrA==
-                   |-----END PUBLIC KEY-----
-                   |""".stripMargin
-    val txCore = TransactionCore(Address(source), Address("45789"), BigDecimal(10.00),1)
+    val source = pubKeyToAddress(bo.publicKey)
+    val txCore = TransactionCore(source, Address("45789"), BigDecimal(10.00),1)
     val txHash = BlockchainOps.txHash(txCore)
     val sig = sign( Hash.value(txHash), bo.privateKey)
 

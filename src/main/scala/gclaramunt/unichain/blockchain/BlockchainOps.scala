@@ -16,18 +16,19 @@ class BlockchainOps(pemKey: String):
   val (privateKey, publicKey) = decodePEMKeys(pemKey)
 
   def newBlock(prevBlock: Block, memPool: Seq[Transaction]): Block =
-    
-    //TODO validate previous block
+
+
+    val prevBlockHash = blockHash(prevBlock.id, prevBlock.txs)
+    CryptoOps.validate(Hash.value(prevBlockHash), prevBlock.signature, publicKey)
     
     val newId = prevBlock.id+1
-    val prevBlockHash = blockHash(prevBlock.id, prevBlock.txs)
     val newBlockHash = blockHash(newId, memPool)
     val hashData = Hash.value(prevBlockHash) ++ Hash.value(newBlockHash)
     val signature = sign(Hash.value(hash(hashData)), privateKey)
     Block(newId, memPool, prevBlockHash, signature)
 
   def validate(tx: Transaction): Try[Boolean] =
-    CryptoOps.validate(Hash.value(tx.hash), tx.signature, addressToPubKey(Address.value(tx.source)))
+    CryptoOps.validate(Hash.value(tx.hash), tx.signature, addressToPubKey(tx.source))
 
     
 object BlockchainOps:
@@ -39,3 +40,4 @@ object BlockchainOps:
 
   def txHash(txCore: TransactionCore): Hash =
     Hash(Address.value(txCore.source).getBytes ++ Address.value(txCore.destination).getBytes ++ txCore.amount.toString().getBytes ++  longToBytes(txCore.nonce))
+

@@ -16,7 +16,6 @@ object CryptoTypes {
 
   opaque type Hash = Array[Byte]
   object Hash:
-    //def apply(s: String): Hash = s.getBytes
     def apply(s: Array[Byte]): Hash = s
     def value(s: Hash): Array[Byte] = s
 
