@@ -7,18 +7,20 @@ import cats.effect.{Async, MonadCancel, Ref}
 import cats.syntax.all.*
 import doobie.Transactor
 import doobie.hikari.HikariTransactor.fromHikariConfig
+import gclaramunt.unichain.Config.{NodeConfig, nodeConfig}
 import gclaramunt.unichain.blockchain.CryptoTypes.Address
 import gclaramunt.unichain.blockchain.{Block, BlockchainOps, Transaction}
-import gclaramunt.unichain.store.{LedgerDB, hikariConfig}
+import gclaramunt.unichain.store.LedgerDB
 
 import java.security.PublicKey
 
 
 // TODO Treasury / genesis block
-class UnichainService[F[_] : MonadCancelThrow](refs: Ref[F, (Block, Map[Address, BigDecimal], Seq[Transaction])], ledgerDB: LedgerDB[F]):
+class UnichainService[F[_] : MonadCancelThrow](config: NodeConfig)(refs: Ref[F, (Block, Map[Address, BigDecimal], Seq[Transaction])], ledgerDB: LedgerDB[F]):
+  private val bOps = BlockchainOps(config.cryptoConfig)
   def submitTx(tx: Transaction): F[Unit] =
     for {
-      isValid <- MonadCancelThrow[F].fromTry(BlockchainOps.validate(tx))
+      isValid <- MonadCancelThrow[F].fromTry(bOps.validate(tx))
       // TODO vallidate TX signature
       _ <- if (!isValid)
         MonadCancelThrow[F].raiseError(new RuntimeException("Invalid transaction signature"))
@@ -30,10 +32,10 @@ class UnichainService[F[_] : MonadCancelThrow](refs: Ref[F, (Block, Map[Address,
             val updatedBalances = balances + (tx.source -> srcUpdtBalance)
               + (tx.destination -> destUdptBalance)
             val updatedMemPool = memPool :+ tx
-            if (updatedMemPool.size < Config.TransactionsPerBlock) {
+            if (updatedMemPool.size < config.transactionsPerBlock) {
               ((lastBlock, updatedBalances, updatedMemPool), ledgerDB.addTransaction(lastBlock.id, updatedMemPool).map(_ => ()))
             } else {
-              val newBlock = BlockchainOps.newBlock(lastBlock, updatedMemPool)
+              val newBlock = bOps.newBlock(lastBlock, updatedMemPool)
               val dbUpdate = for {
                 _ <- ledgerDB.addBlock(newBlock)
                 _ <- ledgerDB.addTransaction(newBlock.id, updatedMemPool)
@@ -49,19 +51,15 @@ class UnichainService[F[_] : MonadCancelThrow](refs: Ref[F, (Block, Map[Address,
 
   def lastValidBlock(): F[Block] = refs.get.map { case (lastBlock, balances, memPool) => lastBlock }
 
-
-//val ledgerStatus: Map[Address, BigDecimal]
-
 object UnichainService {
 
   def apply[F[_] : Async](xa: Transactor[F]): F[UnichainService[F]] = {
     val ledgerDb = LedgerDB(xa)
     for {
-      //      xa <- fromHikariConfig[F](hikariConfig)
       lastBlock <- ledgerDb.getLastBlock
       balances <- buildBalances(ledgerDb.getTransactions)
       refs <- Ref.of((lastBlock, balances, Seq.empty[Transaction]))
-    } yield new UnichainService[F](refs, ledgerDb)
+    } yield new UnichainService[F](nodeConfig)(refs, ledgerDb)
   }
 
   def buildBalances[F[_] : Concurrent](txs: fs2.Stream[F, Transaction]): F[Map[Address, BigDecimal]] =

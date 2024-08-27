@@ -1,17 +1,19 @@
 package gclaramunt.unichain.blockchain
 
 import gclaramunt.unichain.Config
+import gclaramunt.unichain.Config.CryptoConfig
 import gclaramunt.unichain.blockchain.CryptoTypes.{Address, Hash, Sig}
-import gclaramunt.unichain.blockchain.CryptoOps.{hash, privateKey, sign}
+import gclaramunt.unichain.blockchain.CryptoOps.{decodePEMKeys, hash, sign}
 
 import java.security.{KeyFactory, PublicKey}
 import java.security.spec.X509EncodedKeySpec
 import java.util.Base64
 import scala.util.Try
 
-
-object BlockchainOps:
-
+class BlockchainOps(pemKey: String):
+  
+  val (privateKey, publicKey) = decodePEMKeys(pemKey)
+  
   def blockHash(block: Block): Hash =
     hash(s"${block.id}${block.txs.map(_.hash)}")
 
@@ -28,9 +30,10 @@ object BlockchainOps:
 
   def addressToPubKey(address: Address): PublicKey =
     val keyBytes = Base64.getDecoder.decode(Address.value(address))
-    // Create a specification for the key
     val keySpec = new X509EncodedKeySpec(keyBytes)
-    // Get a KeyFactory for the EC (Elliptic Curve) algorithm
     val keyFactory = KeyFactory.getInstance("EC", "BC")
-    // Generate the public key from the specification
     keyFactory.generatePublic(keySpec)
+    
+    
+object BlockchainOps:
+  def apply(cfg: CryptoConfig) = new BlockchainOps(cfg.privateKey)
