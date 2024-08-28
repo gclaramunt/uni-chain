@@ -1,5 +1,9 @@
 package gclaramunt.unichain
 
+import cats.effect.IO
+import gclaramunt.unichain.Config.{CryptoConfig, DbConfig, NodeConfig}
+import gclaramunt.unichain.blockchain.CryptoTypes.Address
+import gclaramunt.unichain.blockchain.{Block, Transaction}
 import munit.{CatsEffectSuite, FunSuite}
 
 class UnichainServiceTest extends CatsEffectSuite:
@@ -11,14 +15,19 @@ class UnichainServiceTest extends CatsEffectSuite:
   //      case (lastBlock, balances, memPool) => balances.get(address)
   //
   //  def lastValidBlock(): F[Block] =
-  test("Submit a transaction updates balance"):
-    assertEquals(false, true)
+  private val config = NodeConfig(DbConfig("","",None,None,1), CryptoConfig(serverPrvKeyStr), 5L)
+  
+  def buildSvc(initialBlock: Block, balances: Map[Address, BigDecimal], currrentTxs: Seq[Transaction]): UnichainService[IO] 
 
-  test("Submit atransactions updates balance and emit block "):
-    assertEquals(false, true)
+
+  test("Submit a transaction updates balance"):
+    assertIO(IO(false), true)
+
+  test("Submit transactions updates balance and emit block "):
+    assertIO(IO(false), true)
 
   test("Get balance for an address"):
-    assertEquals(false, true)
+    assertIO(IO(false), true)
 
   test("Get latest block"):
-    assertEquals(false, true)
+    assertIO(IO(false), true)
