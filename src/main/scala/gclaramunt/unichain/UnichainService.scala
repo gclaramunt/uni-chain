@@ -1,27 +1,21 @@
 package gclaramunt.unichain
 
-import cats.{Monad, MonadError}
 import cats.effect.kernel.{Concurrent, MonadCancelThrow}
-import cats.effect.std.MapRef
-import cats.effect.{Async, MonadCancel, Ref}
+import cats.effect.{Async, Ref}
 import cats.syntax.all.*
 import doobie.Transactor
-import doobie.hikari.HikariTransactor.fromHikariConfig
 import gclaramunt.unichain.Config.{NodeConfig, nodeConfig}
 import gclaramunt.unichain.blockchain.CryptoTypes.Address
 import gclaramunt.unichain.blockchain.{Block, BlockchainOps, Transaction}
 import gclaramunt.unichain.store.LedgerDB
 
-import java.security.PublicKey
-
 
 // TODO Treasury / genesis block
 class UnichainService[F[_] : MonadCancelThrow](config: NodeConfig)(refs: Ref[F, (Block, Map[Address, BigDecimal], Seq[Transaction])], ledgerDB: LedgerDB[F]):
-  private val bOps = BlockchainOps(config.cryptoConfig)
+  private val bOps = BlockchainOps(config.crypto)
   def submitTx(tx: Transaction): F[Unit] =
     for {
       isValid <- MonadCancelThrow[F].fromTry(bOps.validate(tx))
-      // TODO vallidate TX signature
       _ <- if (!isValid)
         MonadCancelThrow[F].raiseError(new RuntimeException("Invalid transaction signature"))
       else
@@ -33,14 +27,15 @@ class UnichainService[F[_] : MonadCancelThrow](config: NodeConfig)(refs: Ref[F, 
               + (tx.destination -> destUdptBalance)
             val updatedMemPool = memPool :+ tx
             if (updatedMemPool.size < config.transactionsPerBlock) {
-              ((lastBlock, updatedBalances, updatedMemPool), ledgerDB.addTransaction(lastBlock.id, updatedMemPool).map(_ => ()))
+              ((lastBlock, updatedBalances, updatedMemPool), ledgerDB.addTransaction(lastBlock.id, tx).map(_ => ()))
             } else {
-              val newBlock = bOps.newBlock(lastBlock, updatedMemPool)
-              val dbUpdate = for {
-                _ <- ledgerDB.addBlock(newBlock)
-                _ <- ledgerDB.addTransaction(newBlock.id, updatedMemPool)
-              } yield ()
-              ((newBlock, updatedBalances, Seq()), dbUpdate)
+              bOps.newBlock(lastBlock, updatedMemPool).map { newBlock =>
+                val dbUpdate = for {
+                  _ <- ledgerDB.addBlock(newBlock)
+                  _ <- ledgerDB.addTransaction(newBlock.id, tx)
+                } yield ()
+                ((newBlock, updatedBalances, Seq()), dbUpdate)
+              }.fold( err =>((lastBlock, balances, memPool), MonadCancelThrow[F].raiseError(err)), identity)
             }
           } else ((lastBlock, balances, memPool), MonadCancelThrow[F].raiseError(new RuntimeException("Source final balance can't be less than 0")))
         }

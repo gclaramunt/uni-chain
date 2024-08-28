@@ -1,7 +1,6 @@
 package gclaramunt.unichain.blockchain
 
 import gclaramunt.unichain.blockchain.CryptoTypes.{Address, Hash, Sig}
-import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
 import org.bouncycastle.jcajce.provider.digest.SHA3.DigestSHA3
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter
@@ -10,7 +9,7 @@ import org.bouncycastle.util.encoders.Base64
 
 import java.io.StringReader
 import java.security.spec.X509EncodedKeySpec
-import java.security.{KeyFactory, PrivateKey, PublicKey, Security, Signature}
+import java.security.*
 import scala.util.Try
 
 object CryptoOps:

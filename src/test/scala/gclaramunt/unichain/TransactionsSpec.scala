@@ -1,9 +1,9 @@
 package gclaramunt.unichain
 
 import cats.effect.IO
-import org.http4s._
-import org.http4s.implicits._
 import munit.CatsEffectSuite
+import org.http4s.*
+import org.http4s.implicits.*
 
 class TransactionsSpec extends CatsEffectSuite:
 
