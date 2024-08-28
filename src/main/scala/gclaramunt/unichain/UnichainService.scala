@@ -9,8 +9,6 @@ import gclaramunt.unichain.blockchain.CryptoTypes.Address
 import gclaramunt.unichain.blockchain.{Block, BlockchainOps, Transaction}
 import gclaramunt.unichain.store.LedgerDB
 
-
-// TODO Treasury / genesis block
 class UnichainService[F[_] : MonadCancelThrow](config: NodeConfig)(refs: Ref[F, (Block, Map[Address, BigDecimal], Seq[Transaction])], ledgerDB: LedgerDB[F]):
   private val bOps = BlockchainOps(config.crypto)
   def submitTx(tx: Transaction): F[Unit] =

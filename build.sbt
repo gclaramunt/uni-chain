@@ -1,4 +1,3 @@
-val Http4sVersion = "1.0.0-M29"
 val MunitVersion = "1.0.0"
 val LogbackVersion = "1.5.6"
 val MunitCatsEffectVersion = "1.0.6"
@@ -7,6 +6,7 @@ val PureConfigVersion = "0.17.7"
 val BouncyCastleVersion = "1.78.1"
 val DoobieVersion = "1.0.0-RC4"
 val H2Version = "2.2.224"
+
 lazy val root = (project in file("."))
   .settings(
     organization := "gclaramunt",
@@ -14,10 +14,6 @@ lazy val root = (project in file("."))
     version := "0.0.1-SNAPSHOT",
     scalaVersion := "3.3.0",
     libraryDependencies ++= Seq(
-      "org.http4s" %% "http4s-ember-server" % Http4sVersion,
-      "org.http4s" %% "http4s-ember-client" % Http4sVersion,
-      "org.http4s" %% "http4s-circe" % Http4sVersion,
-      "org.http4s" %% "http4s-dsl" % Http4sVersion,
 
       "com.h2database" % "h2" % H2Version,
       "org.tpolecat" %% "doobie-h2" % DoobieVersion,
