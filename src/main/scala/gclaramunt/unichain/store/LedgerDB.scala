@@ -30,9 +30,9 @@ class LedgerDB[F[_]: MonadCancelThrow](xa: Transactor[F]):
       .transact(xa)
 
   def addBlock(b: Block): F[Int] = 
-    sql"insert into block (id, previous_hash, signature ) values (${b.id}, ${Hash.value(b.previousHash)}, ${Sig.value(b.signature)})".update.run
+    sql"insert into blocks (id, previous_hash, signature ) values (${b.id}, ${Hash.value(b.previousHash)}, ${Sig.value(b.signature)})".update.run
       .transact(xa)
 
   def addTransaction(blockId: Long, tx: Transaction): F[Int] =
-    sql"insert into transaction (source, destination, amount, signature, hash, nonce ) values (${tx.source}, ${tx.destination}, ${tx.amount}, ${tx.signature}, ${tx.hash}, ${tx.nonce})"
+    sql"insert into transactions (source, destination, amount, signature, hash, nonce ) values (${tx.source}, ${tx.destination}, ${tx.amount}, ${tx.signature}, ${tx.hash}, ${tx.nonce})"
         .update.run.transact(xa)
