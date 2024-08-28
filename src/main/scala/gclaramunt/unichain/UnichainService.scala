@@ -48,7 +48,7 @@ class UnichainService[F[_] : MonadCancelThrow](config: NodeConfig)(refs: Ref[F, 
 
 object UnichainService {
 
-  def apply[F[_] : Async](xa: Transactor[F]): F[UnichainService[F]] = {
+  def apply[F[_] : Concurrent](xa: Transactor[F]): F[UnichainService[F]] = {
     val ledgerDb = LedgerDB(xa)
     for {
       lastBlock <- ledgerDb.getLastBlock

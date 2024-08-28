@@ -1,24 +1,28 @@
 syntax = "proto3";
 
 service UniChainService {
-  rpc SayHello (HelloRequest) returns (HelloResponse);
+  rpc TxAdd (TxRequest) returns (TxResponse);
+  rpc AddressBalance (BalanceRequest) returns (BalanceResponse);
 }
 
-message HelloRequest {
-  string greeting = 1;
+message TxRequest {
+  string source = 1;
+  string destination = 2;
+  string amount = 3;
+  int64  nonce = 4;
+  bytes  hash = 5;
+  bytes  signature = 6;
 }
 
-message HelloResponse {
-  string reply = 1;
+message TxResponse {
+  bool   success = 1;
+  string message = 2;
 }
 
-//
-//    Transaction:
-//    ○ Source, destination addresses for moving funds
-//    ○ Amount being transferred
-//    ○ Signature from the source signing the hash of all data within the transaction
-//    corresponding to the correct source address private key.
-//    ○ Hash of the transaction should be what is being signed by the signature.
-//    ○ Nonce or ordinal associated with the number of sequential transactions used for
-//    the source address, monotonically increasing and used to prevent duplicate
-//    replay transactions.
+message BalanceRequest {
+  string address = 1;
+}
+
+message BalanceResponse {
+  optional string balance = 1;
+}
