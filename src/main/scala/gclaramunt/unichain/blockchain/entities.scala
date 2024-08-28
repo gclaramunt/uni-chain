@@ -6,7 +6,7 @@ import java.nio.ByteBuffer
 
 
 
-object CryptoTypes {
+object CryptoTypes:
 
   opaque type Address = String
   object Address:
@@ -15,11 +15,8 @@ object CryptoTypes {
 
   opaque type Hash = Array[Byte]
   object Hash:
-    def apply(s: Array[Byte]): Hash = s
+    def from(s: Array[Byte]): Hash = s
     def value(s: Hash): Array[Byte] = s
-
-  extension (h: Hash)
-    def +(h2: Hash): Hash = h ++ h2
 
   opaque type Sig = Array[Byte]
   object Sig:
@@ -27,12 +24,11 @@ object CryptoTypes {
     def value(s: Sig): Array[Byte] = s
 
 
-  def longToBytes(x: Long): Array[Byte] = {
+  def longToBytes(x: Long): Array[Byte] =
     val buffer = ByteBuffer.allocate(java.lang.Long.BYTES)
     buffer.putLong(x)
     buffer.array
-  }
-}
+  
 
 /*
 Transaction:
@@ -42,11 +38,8 @@ Transaction:
    Hash of the transaction should be what is being signed by the signature.
    Nonce or ordinal associated with the number of sequential transactions used for the source address, monotonically increasing and used to prevent duplicate replay transactions.
  */
-case class TransactionCore(source: Address, destination: Address, amount: BigDecimal, nonce: Long) 
 case class Transaction(source: Address, destination: Address, amount: BigDecimal, nonce: Long, hash: Hash,  signature: Sig)
-object Transaction {
-  def apply(core: TransactionCore, hash: Hash, sig: Sig): Transaction = new Transaction(core.source, core.destination, core.amount, core.nonce, hash, sig) 
-}
+
 /*
 Block:
    Collection of or sequence of transactions

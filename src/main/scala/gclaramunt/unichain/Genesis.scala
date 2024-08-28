@@ -14,7 +14,7 @@ import doobie.implicits._
 
 object Genesis extends IOApp.Simple:
 
-  val run =
+  val run: IO[Unit] =
     val intialTreasury = BigDecimal(10000)
     val bOps = BlockchainOps(nodeConfig.crypto)
     val treasuryAddress = pubKeyToAddress(bOps.publicKey)
@@ -26,7 +26,7 @@ object Genesis extends IOApp.Simple:
     val hashData = Hash.value(newBlockHash)
     val signature = sign(Hash.value(hash(hashData)), bOps.privateKey)
     val genesisBlock = Block(newId, Seq(treasuryTx), newBlockHash, signature)
-    fromHikariConfig[IO](Config.hikariConfig).use { xa =>
+    fromHikariConfig[IO](Config.hikariConfig).use: xa =>
         val ledgerDb = LedgerDB(xa)
         for {
           _ <- Schema.blockTable.transact(xa)
@@ -34,7 +34,7 @@ object Genesis extends IOApp.Simple:
           _ <- ledgerDb.addBlock(genesisBlock)
           _ <- ledgerDb.addTransaction(newId, treasuryTx)
         } yield ()
-      }
+      
 
 
 object Schema:

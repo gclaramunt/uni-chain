@@ -13,7 +13,7 @@ import gclaramunt.unichain.blockchain.Transaction
 import io.grpc.ServerServiceDefinition
 import unichain.{BalanceRequest, BalanceResponse, TxRequest, TxResponse, UniChainServiceFs2Grpc}
 
-class Server {
+class Server:
 
   import fs2.grpc.syntax.all.*
   import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder
@@ -33,20 +33,18 @@ class Server {
     dispatcher <- Dispatcher.parallel[IO]
     svc <-unichainService(xa, dispatcher)
   } yield svc).use(runServer)
-}
 
 
-class UniChainServiceGrpcImpl[F[_]: Applicative, A](svc: UnichainService[F]) extends  UniChainServiceFs2Grpc[F, A] {
+class UniChainServiceGrpcImpl[F[_]: Applicative, A](svc: UnichainService[F]) extends  UniChainServiceFs2Grpc[F, A]:
   def txAdd(request: TxRequest, ctx: A): F[TxResponse] =
-    val tx = new Transaction(
+    val tx = Transaction(
       Address(request.source),
       Address(request.destination),
       BigDecimal(request.amount),
       request.nonce,
-      Hash(request.hash.toByteArray),
+      Hash.from(request.hash.toByteArray),
       Sig(request.signature.toByteArray))
     svc.submitTx(tx).map { _ => TxResponse(true, "success") }
 
   def addressBalance(request: BalanceRequest, ctx: A): F[BalanceResponse] =
     svc.addressBalance(Address(request.address)).map(obd => BalanceResponse.of(obd.map(_.toString)))
-}
