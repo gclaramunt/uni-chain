@@ -3,7 +3,6 @@ package gclaramunt.unichain.blockchain
 import gclaramunt.unichain.blockchain.CryptoTypes.{Address, Hash, Sig}
 
 import java.nio.ByteBuffer
-import scala.annotation.targetName
 
 
 

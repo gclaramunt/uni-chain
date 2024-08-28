@@ -3,31 +3,12 @@ package gclaramunt.unichain.store
 
 
 import cats.effect.MonadCancelThrow
-import doobie.implicits.toSqlInterpolator
-import gclaramunt.unichain.blockchain.{Block, Transaction}
-import doobie.implicits.*
 import doobie.*
+import doobie.implicits.*
 import gclaramunt.unichain.blockchain.CryptoTypes.{Address, Hash, Sig}
+import gclaramunt.unichain.blockchain.{Block, Transaction}
 
 class LedgerDB[F[_]: MonadCancelThrow](xa: Transactor[F]):
-
-//  case class Block(id: Long, txs: Seq[Transaction], previous: Hash, current: Sig)
-// case class Transaction(source: Address, destination: Address, amount: BigDecimal, signature: Sig, hash: Hash, nonce: Long)
-
-  //  CREATE TABLE IF NOT EXISTS block (
-  //    id   BIGINT,
-  //    previous_hash VARBINARY,
-  //    signature VARBINARY
-  //  );
-  //  CREATE TABLE IF NOT EXISTS transaction (
-  //    source      VARCHAR,
-  //    destination VARCHAR,
-  //    amount NUMERIC,
-  //    signature VARBINARY,
-  //    hash VARBINARY,
-  //    nonce   BIGINT,
-  //    block_id BIGINT
-  //  );
 
   implicit val hashMeta: Meta[Hash] = Meta[Array[Byte]].imap(Hash.apply)(Hash.value)
   implicit val sigMeta: Meta[Sig] = Meta[Array[Byte]].imap(Sig.apply)(Sig.value)
@@ -52,6 +33,6 @@ class LedgerDB[F[_]: MonadCancelThrow](xa: Transactor[F]):
     sql"insert into block (id, previous_hash, signature ) values (${b.id}, ${Hash.value(b.previousHash)}, ${Sig.value(b.signature)})".update.run
       .transact(xa)
 
-  def addTransaction(blockId: Long, txs: Seq[Transaction]): F[Int] = 
-    val sql = "insert into transaction (source, destination, amount, signature, hash, nonce ) values (?,?,?,?, ?,?, ${blockId})"
-    Update[Transaction](sql).updateMany(txs).transact(xa)
+  def addTransaction(blockId: Long, tx: Transaction): F[Int] =
+    sql"insert into transaction (source, destination, amount, signature, hash, nonce ) values (${tx.source}, ${tx.destination}, ${tx.amount}, ${tx.signature}, ${tx.hash}, ${tx.nonce})"
+        .update.run.transact(xa)

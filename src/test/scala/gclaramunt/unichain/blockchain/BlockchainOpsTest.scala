@@ -1,11 +1,9 @@
 package gclaramunt.unichain.blockchain
 
-import gclaramunt.unichain.blockchain.BlockchainOps.blockHash
+import gclaramunt.unichain.blockchain.BlockchainOps.{blockHash, buildTx}
 import gclaramunt.unichain.blockchain.CryptoOps.{hash, pubKeyToAddress, sign, validate}
-import gclaramunt.unichain.blockchain.CryptoTypes.{Address, Hash, Sig}
+import gclaramunt.unichain.blockchain.CryptoTypes.{Address, Hash}
 import munit.FunSuite
-
-import scala.util.Try
 
 class BlockchainOpsTest extends FunSuite:
 
@@ -29,24 +27,16 @@ class BlockchainOpsTest extends FunSuite:
     val hashToSign = Hash.value(hash(Hash.value(prevHash) ++ Hash.value(newBlockHash)))
     val signed =sign( hashToSign, bo.privateKey)
 
-    val newBlock = bo.newBlock(previous, Seq.empty)
+    val newBlock = bo.newBlock(previous, Seq.empty).get
     assertEquals(newBlock.id, 2L)
     assertEquals(Hash.value(newBlock.previousHash).toSeq, Hash.value(prevHash).toSeq)
-    assertEquals(validate(hashToSign, newBlock.signature, bo.publicKey), Try {true})
+    assertEquals(validate(hashToSign, newBlock.signature, bo.publicKey).get, true)
 
 
   test("validate transaction"):
     val source = pubKeyToAddress(bo.publicKey)
-    val txCore = TransactionCore(source, Address("45789"), BigDecimal(10.00),1)
-    val txHash = BlockchainOps.txHash(txCore)
-    val sig = sign( Hash.value(txHash), bo.privateKey)
+    val tx = buildTx(source, Address("45789"), BigDecimal(10.00),1, bo.privateKey)
+    assertEquals(bo.validate(tx).get, true)
 
-    val tx = Transaction(txCore, txHash, sig)
-
-    assertEquals(bo.validate(tx), Try {
-      true
-    })
-
-  // def addressToPubKey(address: Address): PublicKey =
 
 

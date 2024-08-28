@@ -1,18 +1,17 @@
 package gclaramunt.unichain
 
 import cats.Applicative
-import cats.effect.Resource
-import io.grpc.ServerServiceDefinition
-import cats.effect.IO
-import org.checkerframework.checker.units.qual.A
+import cats.effect.{IO, Resource}
 import cats.syntax.all.*
+import io.grpc.ServerServiceDefinition
+import org.checkerframework.checker.units.qual.A
 import unichain.{HelloRequest, HelloResponse, UniChainServiceFs2Grpc}
 
 import scala.concurrent.Future
 class Server {
 
+  import fs2.grpc.syntax.all.*
   import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder
-  import fs2.grpc.syntax.all._
 
 
   val unichainService: Resource[IO, ServerServiceDefinition] =
