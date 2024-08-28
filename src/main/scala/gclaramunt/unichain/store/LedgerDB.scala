@@ -19,12 +19,12 @@ class LedgerDB[F[_]: MonadCancelThrow](xa: Transactor[F]):
     case (id, previousHash, signature) => Block(id, Seq.empty[Transaction], previousHash, signature)
 
   def getLastBlock: F[Block] = 
-    sql"SELECT id, previous, current FROM blocks order by id desc limit 1"
+    sql"SELECT id, previous_hash, signature FROM blocks order by id desc limit 1"
       .query[Block].unique
       .transact(xa)
 
   def getTransactions: fs2.Stream[F, Transaction] = 
-    sql"SELECT source, destination, amount, signature, hash, nonce FROM transactions"
+    sql"SELECT source, destination, amount, nonce, hash, signature FROM transactions"
       .query[Transaction]
       .stream
       .transact(xa)
@@ -34,5 +34,5 @@ class LedgerDB[F[_]: MonadCancelThrow](xa: Transactor[F]):
       .transact(xa)
 
   def addTransaction(blockId: Long, tx: Transaction): F[Int] =
-    sql"insert into transactions (source, destination, amount, signature, hash, nonce ) values (${tx.source}, ${tx.destination}, ${tx.amount}, ${tx.signature}, ${tx.hash}, ${tx.nonce})"
+    sql"insert into transactions (source, destination, amount, nonce, hash, signature, block_id ) values (${tx.source}, ${tx.destination}, ${tx.amount}, ${tx.nonce}, ${tx.hash}, ${tx.signature}, $blockId)"
         .update.run.transact(xa)

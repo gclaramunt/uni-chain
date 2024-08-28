@@ -1,19 +1,17 @@
 package gclaramunt.unichain
 
 import cats.Applicative
-import cats.effect.kernel.Concurrent
 import cats.effect.std.Dispatcher
-import cats.effect.{Async, IO, Resource}
+import cats.effect.{Async, IO, IOApp, Resource}
 import cats.syntax.all.*
 import doobie.Transactor
-import doobie.hikari.HikariTransactor
 import doobie.hikari.HikariTransactor.fromHikariConfig
 import gclaramunt.unichain.blockchain.CryptoTypes.{Address, Hash, Sig}
 import gclaramunt.unichain.blockchain.Transaction
 import io.grpc.ServerServiceDefinition
 import unichain.{BalanceRequest, BalanceResponse, TxRequest, TxResponse, UniChainServiceFs2Grpc}
 
-class Server:
+object UniChainServiceGrpcServer extends IOApp.Simple:
 
   import fs2.grpc.syntax.all.*
   import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder
@@ -28,7 +26,7 @@ class Server:
     .evalMap(server => IO(server.start()))
     .useForever
 
-  (for {
+  val run: IO[Unit] = (for {
     xa <- fromHikariConfig[IO](Config.hikariConfig)
     dispatcher <- Dispatcher.parallel[IO]
     svc <-unichainService(xa, dispatcher)
