@@ -37,10 +37,10 @@ object BlockchainOps:
   def blockHash(id: Long, txs: Seq[Transaction]): Hash =
     hash(longToBytes(id) ++ txs.flatMap(t => Hash.value(t.hash)))
 
-  def transactionHash(source: Address, destination: Address, amount: BigDecimal, nonce: Long): Hash =
-    hash(Address.value(source).getBytes ++ Address.value(destination).getBytes ++ amount.toString().getBytes ++  longToBytes(nonce))
+  def transactionHash(destination: Address, amount: BigDecimal, nonce: Long): Hash =
+    hash(Address.value(destination).getBytes ++ amount.toString().getBytes ++  longToBytes(nonce))
 
   def buildTx(source: Address, dest: Address, amount: BigDecimal, nonce: Long, privateKey: PrivateKey): Transaction =
-    val txHash = transactionHash(source, dest, amount, nonce)
+    val txHash = transactionHash(dest, amount, nonce)
     val sig = sign(Hash.value(txHash), privateKey)
     Transaction(source, dest, amount, nonce, txHash, sig)
