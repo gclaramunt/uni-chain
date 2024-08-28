@@ -19,7 +19,7 @@ object CryptoOps:
   def hash(input: Array[Byte]): Hash =
     val digest = new DigestSHA3(256)
     val hashBytes = digest.digest(input)
-    Hash(hashBytes)
+    Hash.from(hashBytes)
 
   def sign(data: Array[Byte], privateKey: PrivateKey): Sig =
     val signature = Signature.getInstance("SHA256withECDSA", "BC")

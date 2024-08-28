@@ -35,13 +35,12 @@ object BlockchainOps:
   def apply(cfg: CryptoConfig) = new BlockchainOps(cfg.privateKey)
 
   def blockHash(id: Long, txs: Seq[Transaction]): Hash =
-    Hash(longToBytes(id) ++ txs.flatMap(t => Hash.value(t.hash)))
+    hash(longToBytes(id) ++ txs.flatMap(t => Hash.value(t.hash)))
 
-  def txHash(txCore: TransactionCore): Hash =
-    Hash(Address.value(txCore.source).getBytes ++ Address.value(txCore.destination).getBytes ++ txCore.amount.toString().getBytes ++  longToBytes(txCore.nonce))
+  def transactionHash(source: Address, destination: Address, amount: BigDecimal, nonce: Long): Hash =
+    hash(Address.value(source).getBytes ++ Address.value(destination).getBytes ++ amount.toString().getBytes ++  longToBytes(nonce))
 
   def buildTx(source: Address, dest: Address, amount: BigDecimal, nonce: Long, privateKey: PrivateKey): Transaction =
-    val txCore = TransactionCore(source, dest, amount, nonce)
-    val txHash = BlockchainOps.txHash(txCore)
+    val txHash = transactionHash(source, dest, amount, nonce)
     val sig = sign(Hash.value(txHash), privateKey)
-    Transaction(txCore, txHash, sig)
+    Transaction(source, dest, amount, nonce, txHash, sig)

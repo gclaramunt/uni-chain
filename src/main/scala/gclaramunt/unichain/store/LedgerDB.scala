@@ -10,7 +10,7 @@ import gclaramunt.unichain.blockchain.{Block, Transaction}
 
 class LedgerDB[F[_]: MonadCancelThrow](xa: Transactor[F]):
 
-  implicit val hashMeta: Meta[Hash] = Meta[Array[Byte]].imap(Hash.apply)(Hash.value)
+  implicit val hashMeta: Meta[Hash] = Meta[Array[Byte]].imap(Hash.from)(Hash.value)
   implicit val sigMeta: Meta[Sig] = Meta[Array[Byte]].imap(Sig.apply)(Sig.value)
   implicit val addressMeta: Meta[Address] = Meta[String].imap(Address.apply)(Address.value)
 

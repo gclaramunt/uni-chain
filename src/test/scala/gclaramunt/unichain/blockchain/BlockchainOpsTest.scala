@@ -21,7 +21,7 @@ class BlockchainOpsTest extends FunSuite:
   test("newBlock without transactions"):
     val prevHash = BlockchainOps.blockHash(1, Seq())
     val prevSig = sign(Hash.value(prevHash), bo.privateKey)
-    val previous = Block(1,Seq(),Hash(Array.empty[Byte]), prevSig)
+    val previous = Block(1,Seq(),Hash.from(Array.empty[Byte]), prevSig)
 
     val newBlockHash = blockHash(2, Seq())
     val hashToSign = Hash.value(hash(Hash.value(prevHash) ++ Hash.value(newBlockHash)))

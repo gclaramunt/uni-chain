@@ -17,14 +17,13 @@ object Config:
     .at("node")
     .loadOrThrow[NodeConfig]
   
-  lazy val hikariConfig: HikariConfig = {
+  lazy val hikariConfig: HikariConfig = 
     val cfg = new HikariConfig()
     cfg.setDriverClassName(nodeConfig.db.driver)
     cfg.setJdbcUrl(nodeConfig.db.jdbcUrl)
     cfg.setUsername(nodeConfig.db.user.getOrElse(""))
     cfg.setPassword(nodeConfig.db.password.getOrElse(""))
     cfg
-  }
 
 
   
