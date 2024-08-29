@@ -1,6 +1,6 @@
 package gclaramunt.unichain.blockchain
 
-import gclaramunt.unichain.Config
+import gclaramunt.unichain.{Config, GenericUnichainError, UnichainError}
 import gclaramunt.unichain.Config.CryptoConfig
 import gclaramunt.unichain.blockchain.BlockchainOps.buildBlock
 import gclaramunt.unichain.blockchain.CryptoOps.{addressToPubKey, decodePEMKeys, hash, sign}
@@ -13,16 +13,16 @@ class BlockchainOps(pemKey: String):
   
   val (privateKey, publicKey) = decodePEMKeys(pemKey)
   
-  def newBlock(currentBlock: Block, memPool: Seq[Transaction]): Try[Block] =
+  def newBlock(currentBlock: Block, memPool: Seq[Transaction]): Either[UnichainError, Block] =
     val currentBlockHash = currentBlock.hash
-    CryptoOps.validate(Hash.value(currentBlockHash), currentBlock.signature, publicKey).map:
-      currentBlockValid =>
-        if (currentBlockValid) then
-          buildBlock(currentBlock.id + 1,memPool, currentBlockHash, privateKey )
-        else
-          throw new RuntimeException("Invalid current block")
+    val currentBlockValid=  CryptoOps.validate(Hash.value(currentBlockHash), currentBlock.signature, publicKey)
+      //currentBlockValid =>
+    if (currentBlockValid) then
+      Right(buildBlock(currentBlock.id + 1,memPool, currentBlockHash, privateKey ))
+    else
+      Left(GenericUnichainError("Invalid current block"))
 
-  def validate(tx: Transaction): Try[Boolean] =
+  def validate(tx: Transaction): Boolean =
     CryptoOps.validate(Hash.value(tx.hash), tx.signature, addressToPubKey(tx.source))
 
     
@@ -46,4 +46,4 @@ object BlockchainOps:
     // hash and sign the previous and current block hashes to prevent tampering
     val hashData = hash(Hash.value(currentBlockHash) ++ Hash.value(newBlockHash))
     val signature = sign(Hash.value(hashData), privateKey)
-    Block(newId, newBlockHash, currentBlockHash, signature)
+    Block(newId, hashData, currentBlockHash, signature)

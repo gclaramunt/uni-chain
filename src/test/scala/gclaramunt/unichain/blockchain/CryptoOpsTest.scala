@@ -18,10 +18,10 @@ class CryptoOpsTest extends FunSuite:
     val data = "Hello world!".getBytes
     val signed = sign(data, serverPrvKey)
     val validated = validate(data, signed, serverPubKey)
-    assertEquals(validated, Try { true })
+    assertEquals(validated, true )
 
   test("don't validate tampered data"):
     val data = "Hello world!".getBytes
     val signed = sign(data, serverPrvKey)
     val validated = validate("Goodbye world!".getBytes, signed, serverPubKey)
-    assertEquals(validated, Try { false })
+    assertEquals(validated, false )
