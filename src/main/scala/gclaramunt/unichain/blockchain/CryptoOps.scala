@@ -27,11 +27,11 @@ object CryptoOps:
     signature.update(data)
     Sig(signature.sign)
 
-  def validate(data: Array[Byte], signed: Sig, pubKey: PublicKey): Try[Boolean] =
+  def validate(data: Array[Byte], signed: Sig, pubKey: PublicKey): Boolean =
     val signature = Signature.getInstance("SHA256withECDSA", "BC")
     signature.initVerify(pubKey)
     signature.update(data)
-    Try { signature.verify(Sig.value(signed)) }
+    signature.verify(Sig.value(signed)) 
 
 
   def loadKeysFromEnv (envVariable: String): (PrivateKey, PublicKey)=

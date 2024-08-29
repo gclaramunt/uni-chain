@@ -1,6 +1,6 @@
 val MunitVersion = "1.0.0"
 val LogbackVersion = "1.5.6"
-val MunitCatsEffectVersion = "1.0.6"
+val MunitCatsEffectVersion = "2.0.0"
 val PureConfigVersion = "0.17.7"
 
 val BouncyCastleVersion = "1.78.1"
@@ -12,7 +12,7 @@ lazy val root = (project in file("."))
     organization := "gclaramunt",
     name := "unichain",
     version := "0.0.1-SNAPSHOT",
-    scalaVersion := "3.3.0",
+    scalaVersion := "3.5.0",
     libraryDependencies ++= Seq(
 
       "com.h2database" % "h2" % H2Version,
@@ -30,8 +30,9 @@ lazy val root = (project in file("."))
 
       "io.grpc" % "grpc-netty-shaded" % scalapb.compiler.Version.grpcJavaVersion,
 
-      "org.scalameta" %% "munit" % MunitVersion % Test,
-      "org.typelevel" %% "munit-cats-effect-3" % MunitCatsEffectVersion % Test,
+      //"org.scalameta" %% "munit" % MunitVersion % Test,
+      "org.typelevel" %% "munit-cats-effect" % MunitCatsEffectVersion % Test,
+
     ),
     testFrameworks += new TestFramework("munit.Framework")
   )

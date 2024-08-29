@@ -13,7 +13,7 @@ class BlockchainOpsTest extends FunSuite:
   test("newBlock with transactions"):
     val prevHash = BlockchainOps.blockHash(1, Seq())
     val prevSig = sign(Hash.value(prevHash), bo.privateKey)
-    val previous = Block(1, Hash.from(Array.empty[Byte]), Hash.from(Array.empty[Byte]), prevSig)
+    val previous = Block(1, prevHash, Hash.from(Array.empty[Byte]), prevSig)
 
     val serverAddress = pubKeyToAddress(bo.publicKey)
     val tx1 = buildTx(serverAddress, Address("12345"), BigDecimal(10.60), 1, bo.privateKey)
@@ -26,18 +26,18 @@ class BlockchainOpsTest extends FunSuite:
     val hashToSign = Hash.value(hash(Hash.value(prevHash) ++ Hash.value(newBlockHash)))
     val signed = sign(hashToSign, bo.privateKey)
 
-    val newBlock = bo.newBlock(previous, txs).get
+    val newBlock = bo.newBlock(previous, txs).toOption.get
     assertEquals(newBlock.id, 2L)
     assertEquals(Hash.value(newBlock.previousHash).toSeq, Hash.value(prevHash).toSeq)
-    assertEquals(validate(hashToSign, newBlock.signature, bo.publicKey).get, true)
+    assertEquals(validate(hashToSign, newBlock.signature, bo.publicKey), true)
 
   test("validate transaction"):
     val tx = buildTx(pubKeyToAddress(w1PubKey), Address("doesn't matter"), BigDecimal(10.00),1, w1PrvKey)
-    assertEquals(bo.validate(tx).get, true)
+    assertEquals(bo.validate(tx), true)
 
   test("not validate transaction with invalid source"):
     val tx = buildTx(pubKeyToAddress(bo.publicKey), Address("doesn't matter"), BigDecimal(10.00), 1, w1PrvKey)
-    assertEquals(bo.validate(tx).get, false)
+    assertEquals(bo.validate(tx), false)
 
 
 
