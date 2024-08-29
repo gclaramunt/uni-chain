@@ -1,7 +1,7 @@
 package gclaramunt.unichain.blockchain
 
-import gclaramunt.unichain.blockchain.CryptoOps.*
 import gclaramunt.unichain.*
+import gclaramunt.unichain.blockchain.CryptoOps.*
 import gclaramunt.unichain.blockchain.CryptoTypes.Hash
 import munit.FunSuite
 import org.bouncycastle.util.encoders.Hex

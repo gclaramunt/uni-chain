@@ -1,9 +1,9 @@
 package gclaramunt.unichain.blockchain
 
-import gclaramunt.unichain.blockchain.BlockchainOps.{blockHash, buildTx}
-import gclaramunt.unichain.blockchain.CryptoOps.{decodePEMKeys, hash, pubKeyToAddress, sign, validate}
-import gclaramunt.unichain.blockchain.CryptoTypes.{Address, Hash}
 import gclaramunt.unichain.*
+import gclaramunt.unichain.blockchain.BlockchainOps.{blockHash, buildTx}
+import gclaramunt.unichain.blockchain.CryptoOps.{hash, pubKeyToAddress, sign, validate}
+import gclaramunt.unichain.blockchain.CryptoTypes.{Address, Hash}
 import munit.FunSuite
 
 class BlockchainOpsTest extends FunSuite:
@@ -13,7 +13,7 @@ class BlockchainOpsTest extends FunSuite:
   test("newBlock with transactions"):
     val prevHash = BlockchainOps.blockHash(1, Seq())
     val prevSig = sign(Hash.value(prevHash), bo.privateKey)
-    val previous = Block(1, Seq(), Hash.from(Array.empty[Byte]), prevSig)
+    val previous = Block(1, Hash.from(Array.empty[Byte]), Hash.from(Array.empty[Byte]), prevSig)
 
     val serverAddress = pubKeyToAddress(bo.publicKey)
     val tx1 = buildTx(serverAddress, Address("12345"), BigDecimal(10.60), 1, bo.privateKey)

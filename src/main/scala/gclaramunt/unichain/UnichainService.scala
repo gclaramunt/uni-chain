@@ -1,10 +1,10 @@
 package gclaramunt.unichain
 
+import cats.effect.Ref
 import cats.effect.kernel.{Concurrent, MonadCancelThrow}
-import cats.effect.{Async, Ref}
 import cats.syntax.all.*
-import doobie.Transactor
 import gclaramunt.unichain.Config.{NodeConfig, nodeConfig}
+import gclaramunt.unichain.blockchain.CryptoOps.pubKeyToAddress
 import gclaramunt.unichain.blockchain.CryptoTypes.Address
 import gclaramunt.unichain.blockchain.{Block, BlockchainOps, Transaction}
 import gclaramunt.unichain.store.LedgerDB
@@ -50,18 +50,32 @@ class UnichainService[F[_] : MonadCancelThrow](config: NodeConfig)(refs: Ref[F, 
 
 object UnichainService:
 
-  def apply[F[_] : Concurrent](xa: Transactor[F]): F[UnichainService[F]] = 
-    val ledgerDb = LedgerDB(xa)
+  def apply[F[_] : Concurrent](ledgerDb: LedgerDB[F]): F[UnichainService[F]] = apply(ledgerDb, nodeConfig)
+  
+  def apply[F[_] : Concurrent](ledgerDb: LedgerDB[F], config: NodeConfig): F[UnichainService[F]] =
     for {
       lastBlock <- ledgerDb.getLastBlock
-      balances <- buildBalances(ledgerDb.getTransactions)
+      balances <- buildBalances(config)(ledgerDb.getTransactions)
       refs <- Ref.of((lastBlock, balances, Seq.empty[Transaction]))
-    } yield new UnichainService[F](nodeConfig)(refs, ledgerDb)
+    } yield new UnichainService[F](config)(refs, ledgerDb)
 
-  def buildBalances[F[_] : Concurrent](txs: fs2.Stream[F, Transaction]): F[Map[Address, BigDecimal]] =
+  def buildBalances[F[_] : Concurrent](config: NodeConfig)(txs: fs2.Stream[F, Transaction]): F[Map[Address, BigDecimal]] =
+    val genesisAddress = pubKeyToAddress(BlockchainOps(config.crypto).publicKey)
+
+    // auxiliary function
+    def updateBalance(m: Map[Address, BigDecimal], k: Address, amount: BigDecimal): Map[Address, BigDecimal] =
+      val currentVal = m.getOrElse(k, BigDecimal(0))
+      m + (k -> (currentVal + amount))
+      
     txs.compile.fold(Map.empty[Address, BigDecimal]) { case (m, tx) =>
-      val k = tx.destination
-      val currentVal = m.getOrElse(tx.destination, BigDecimal(0))
-      m + (tx.destination -> (currentVal + tx.amount))
+      if (tx.destination == genesisAddress && tx.nonce == 0) then
+        //special treatment for genesis tx
+        m + (genesisAddress -> tx.amount)
+      else
+        val m1 = updateBalance(m, tx.source, -tx.amount)
+        val m2 = updateBalance(m1, tx.destination, tx.amount)
+        m2
     }
+
+    
 
