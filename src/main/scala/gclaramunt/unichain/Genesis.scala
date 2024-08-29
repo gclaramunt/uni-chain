@@ -1,16 +1,14 @@
 package gclaramunt.unichain
 
 import cats.effect.{IO, IOApp}
+import doobie.*
 import doobie.hikari.HikariTransactor.fromHikariConfig
-import doobie.implicits.toSqlInterpolator
+import doobie.implicits.*
 import gclaramunt.unichain.Config.nodeConfig
-import gclaramunt.unichain.blockchain.BlockchainOps.{blockHash, buildTx}
-import gclaramunt.unichain.blockchain.CryptoOps.{hash, pubKeyToAddress, sign}
-import gclaramunt.unichain.blockchain.CryptoTypes.Hash
-import gclaramunt.unichain.blockchain.{Block, BlockchainOps, Transaction}
+import gclaramunt.unichain.blockchain.BlockchainOps.{blockHash, buildBlock, buildTx}
+import gclaramunt.unichain.blockchain.CryptoOps.pubKeyToAddress
+import gclaramunt.unichain.blockchain.{BlockchainOps, Transaction}
 import gclaramunt.unichain.store.LedgerDB
-import doobie._
-import doobie.implicits._
 
 object Genesis extends IOApp.Simple:
 
@@ -23,9 +21,7 @@ object Genesis extends IOApp.Simple:
 
     val newId = 0
     val newBlockHash = blockHash(newId, Seq(treasuryTx))
-    val hashData = Hash.value(newBlockHash)
-    val signature = sign(Hash.value(hash(hashData)), bOps.privateKey)
-    val genesisBlock = Block(newId, Seq(treasuryTx), newBlockHash, signature)
+    val genesisBlock = buildBlock(newId,Seq(treasuryTx), newBlockHash, bOps.privateKey )
     fromHikariConfig[IO](Config.hikariConfig).use: xa =>
         val ledgerDb = LedgerDB(xa)
         for {
@@ -41,6 +37,7 @@ object Schema:
 
   val blockTable: doobie.ConnectionIO[Int] =sql"""CREATE TABLE IF NOT EXISTS blocks(
     id BIGINT,
+    hash VARBINARY,
     previous_hash VARBINARY,
     signature VARBINARY
   );""".update.run

@@ -48,7 +48,7 @@ Block:
    Signature attached corresponding to hash of the data of the block signed by the keypair of the current (single process) node.
    Invalid to contain multiple conflicting transactions
  */
-case class Block (id: Long, txs: Seq[Transaction], previousHash: Hash, signature: Sig)
+case class Block(id: Long, hash: Hash, previousHash: Hash, signature: Sig)
 
 /*
 Address:

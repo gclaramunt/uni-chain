@@ -8,8 +8,9 @@ import doobie.Transactor
 import doobie.hikari.HikariTransactor.fromHikariConfig
 import gclaramunt.unichain.blockchain.CryptoTypes.{Address, Hash, Sig}
 import gclaramunt.unichain.blockchain.Transaction
+import gclaramunt.unichain.store.LedgerDB
 import io.grpc.ServerServiceDefinition
-import unichain.{BalanceRequest, BalanceResponse, TxRequest, TxResponse, UniChainServiceFs2Grpc}
+import unichain.*
 
 object UniChainServiceGrpcServer extends IOApp.Simple:
 
@@ -17,7 +18,7 @@ object UniChainServiceGrpcServer extends IOApp.Simple:
   import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder
 
   def unichainService[F[_]: Async](xa: Transactor[F], dispatcher: Dispatcher[F]): Resource[F,ServerServiceDefinition] =
-    Resource.eval(UnichainService(xa).map( svc => UniChainServiceFs2Grpc.bindService(dispatcher, new UniChainServiceGrpcImpl(svc))))
+    Resource.eval(UnichainService(LedgerDB(xa)).map( svc => UniChainServiceFs2Grpc.bindService(dispatcher, new UniChainServiceGrpcImpl(svc))))
 
   def runServer(service: ServerServiceDefinition): IO[Nothing] = NettyServerBuilder
     .forPort(9999)

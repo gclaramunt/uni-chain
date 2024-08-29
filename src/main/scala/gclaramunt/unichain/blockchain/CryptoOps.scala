@@ -8,8 +8,8 @@ import org.bouncycastle.openssl.{PEMKeyPair, PEMParser}
 import org.bouncycastle.util.encoders.Base64
 
 import java.io.StringReader
-import java.security.spec.X509EncodedKeySpec
 import java.security.*
+import java.security.spec.X509EncodedKeySpec
 import scala.util.Try
 
 object CryptoOps:
