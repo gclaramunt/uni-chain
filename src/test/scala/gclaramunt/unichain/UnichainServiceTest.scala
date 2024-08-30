@@ -25,6 +25,7 @@ class UnichainServiceTest extends CatsEffectSuite:
   private val serverAdd = pubKeyToAddress(serverPubKey)
   private val w1Add = pubKeyToAddress(w1PubKey)
   private val w2Add = pubKeyToAddress(w2PubKey)
+
   private val currentTxs = Seq(
     buildTx(serverAdd, serverAdd, BigDecimal(80), 0, serverPrvKey),
     buildTx(serverAdd, w1Add, BigDecimal(40), 0, serverPrvKey),
@@ -33,16 +34,16 @@ class UnichainServiceTest extends CatsEffectSuite:
   )
 
   test("Submit a transaction updates balance"):
-    val exec = for {
+    val exec = for
       svc <-buildSvc(ledgerDb(block, currentTxs))
       _ <- svc.submitTx(buildTx(w2Add, w1Add, BigDecimal(5), 0, w2PrvKey))
       balance <- svc.addressBalance(w1Add)
-    } yield balance
+    yield balance
     assertIO(exec, Some(BigDecimal(35)))
 
   test("Submit transactions updates balance and emit block "):
     val svcF = buildSvc(ledgerDb(block, currentTxs))
-    val exec = for {
+    val exec = for
       svc <-svcF
       _ <- svc.submitTx(buildTx(w2Add, w1Add, BigDecimal(5), 0, w2PrvKey))
       _ <- svc.submitTx(buildTx(w1Add, w2Add, BigDecimal(5), 0, w1PrvKey))
@@ -50,29 +51,29 @@ class UnichainServiceTest extends CatsEffectSuite:
       _ <- svc.submitTx(buildTx(w1Add, w2Add, BigDecimal(5), 0, w1PrvKey))
       balance <- svc.addressBalance(w1Add)
       newBlock <- svc.lastValidBlock()
-    } yield (balance,newBlock.id)
+    yield (balance,newBlock.id)
     assertIO(exec, (Some(BigDecimal(30)), 2L))
 
   test("Submit a transaction exceeding balance"):
-    val exec = for {
+    val exec = for
       svc <- buildSvc(ledgerDb(block, currentTxs))
       _ <- svc.submitTx(buildTx(w2Add, w1Add, BigDecimal(500), 0, w2PrvKey))
       balance <- svc.addressBalance(w1Add)
-    } yield balance
+    yield balance
 
     interceptMessageIO[RuntimeException]("Source final balance can't be less than 0")(exec)
 
 
   test("Get balance for an address"):
-    val exec = for {
+    val exec = for
       svc <-buildSvc(ledgerDb(block, currentTxs))
       balance <- svc.addressBalance(w1Add)
-    } yield balance
+    yield balance
     assertIO(exec, Some(BigDecimal(30)))
 
   test("Get latest block"):
-    val exec = for {
+    val exec = for
       svc <- buildSvc(ledgerDb(block, currentTxs))
       block <- svc.lastValidBlock()
-    } yield block
+    yield block
     assertIO(exec, block)

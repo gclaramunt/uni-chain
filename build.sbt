@@ -34,7 +34,14 @@ lazy val root = (project in file("."))
       "org.typelevel" %% "munit-cats-effect" % MunitCatsEffectVersion % Test,
 
     ),
-    testFrameworks += new TestFramework("munit.Framework")
+    scalacOptions ++= Seq("-new-syntax", "-rewrite"),
+    testFrameworks += new TestFramework("munit.Framework"),
+    assembly / assemblyMergeStrategy  := {
+      case PathList("META-INF", "services", _* ) =>MergeStrategy.first
+      case PathList("META-INF", _*) => MergeStrategy.discard
+      case _                        => MergeStrategy.first
+    }
   )
 
 enablePlugins(Fs2Grpc)
+

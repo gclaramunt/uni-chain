@@ -3,8 +3,10 @@ syntax = "proto3";
 service UniChainService {
   rpc TxAdd (TxRequest) returns (TxResponse);
   rpc AddressBalance (BalanceRequest) returns (BalanceResponse);
+  rpc LastBlock (Empty) returns (BlockResponse);
 }
 
+message Empty {}
 message TxRequest {
   string source = 1;
   string destination = 2;
@@ -25,4 +27,11 @@ message BalanceRequest {
 
 message BalanceResponse {
   optional string balance = 1;
+}
+
+message BlockResponse {
+  int64  id = 1;
+  bytes  hash = 2;
+  bytes  previousHash = 3;
+  bytes  signature = 4;
 }

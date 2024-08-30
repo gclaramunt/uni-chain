@@ -13,32 +13,32 @@ class UnichainService[F[_] : MonadCancelThrow](config: NodeConfig)(refs: Ref[F, 
   private val bOps = BlockchainOps(config.crypto)
   def submitTx(tx: Transaction): F[Unit] =
     val isValid = bOps.validate(tx)
-    for {
+    for
         // isValid <- MonadCancelThrow[F].fromTry(bOps.validate(tx))
-        _ <- if (!isValid)
+        _ <- if !isValid then
           MonadCancelThrow[F].raiseError(new RuntimeException("Invalid transaction signature"))
         else
           refs.flatModify: 
             case (lastBlock, balances, memPool) =>
               val srcUpdtBalance = balances(tx.source) - tx.amount
               val destUdptBalance = balances.getOrElse(tx.destination, BigDecimal(0)) + tx.amount
-              if (srcUpdtBalance >= 0) {
+              if srcUpdtBalance >= 0 then
                 val updatedBalances = balances + (tx.source -> srcUpdtBalance)
                   + (tx.destination -> destUdptBalance)
                 val updatedMemPool = memPool :+ tx
-                if (updatedMemPool.size < config.transactionsPerBlock) {
+                if updatedMemPool.size < config.transactionsPerBlock then
                   ((lastBlock, updatedBalances, updatedMemPool), ledgerDB.addTransaction(lastBlock.id, tx).map(_ => ()))
-                } else {
+                else 
                   bOps.newBlock(lastBlock, updatedMemPool).map { newBlock =>
-                    val dbUpdate = for {
+                    val dbUpdate = for
                       _ <- ledgerDB.addBlock(newBlock)
                       _ <- ledgerDB.addTransaction(newBlock.id, tx)
-                    } yield ()
+                    yield ()
                     ((newBlock, updatedBalances, Seq()), dbUpdate)
                   }.fold( err =>((lastBlock, balances, memPool), MonadCancelThrow[F].raiseError(new Exception(err.toString))), identity)
-                }
-              } else ((lastBlock, balances, memPool), MonadCancelThrow[F].raiseError(new RuntimeException("Source final balance can't be less than 0")))
-      } yield ()
+              else 
+                ((lastBlock, balances, memPool), MonadCancelThrow[F].raiseError(new RuntimeException("Source final balance can't be less than 0")))
+    yield ()
 
 
   def addressBalance(address: Address): F[Option[BigDecimal]] = 
@@ -54,11 +54,11 @@ object UnichainService:
   def apply[F[_] : Concurrent](ledgerDb: LedgerDB[F]): F[UnichainService[F]] = apply(ledgerDb, nodeConfig)
   
   def apply[F[_] : Concurrent](ledgerDb: LedgerDB[F], config: NodeConfig): F[UnichainService[F]] =
-    for {
+    for
       lastBlock <- ledgerDb.getLastBlock
       balances <- buildBalances(config)(ledgerDb.getTransactions)
       refs <- Ref.of((lastBlock, balances, Seq.empty[Transaction]))
-    } yield new UnichainService[F](config)(refs, ledgerDb)
+    yield new UnichainService[F](config)(refs, ledgerDb)
 
   def buildBalances[F[_] : Concurrent](config: NodeConfig)(txs: fs2.Stream[F, Transaction]): F[Map[Address, BigDecimal]] =
     val genesisAddress = pubKeyToAddress(BlockchainOps(config.crypto).publicKey)

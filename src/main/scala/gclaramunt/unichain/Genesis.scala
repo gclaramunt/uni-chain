@@ -1,6 +1,6 @@
 package gclaramunt.unichain
 
-import cats.effect.{IO, IOApp}
+import cats.effect.{ExitCode, IO, IOApp}
 import doobie.*
 import doobie.hikari.HikariTransactor.fromHikariConfig
 import doobie.implicits.*
@@ -10,10 +10,10 @@ import gclaramunt.unichain.blockchain.CryptoOps.pubKeyToAddress
 import gclaramunt.unichain.blockchain.{BlockchainOps, Transaction}
 import gclaramunt.unichain.store.LedgerDB
 
-object Genesis extends IOApp.Simple:
+object Genesis extends IOApp:
 
-  val run: IO[Unit] =
-    val intialTreasury = BigDecimal(10000)
+  def run(args: List[String]): IO[ExitCode] =
+    val intialTreasury = BigDecimal(args(0))
     val bOps = BlockchainOps(nodeConfig.crypto)
     val treasuryAddress = pubKeyToAddress(bOps.publicKey)
 
@@ -24,12 +24,12 @@ object Genesis extends IOApp.Simple:
     val genesisBlock = buildBlock(newId,Seq(treasuryTx), newBlockHash, bOps.privateKey )
     fromHikariConfig[IO](Config.hikariConfig).use: xa =>
         val ledgerDb = LedgerDB(xa)
-        for {
+        for
           _ <- Schema.blockTable.transact(xa)
           _ <- Schema.txTable.transact(xa)
           _ <- ledgerDb.addBlock(genesisBlock)
           _ <- ledgerDb.addTransaction(newId, treasuryTx)
-        } yield ()
+        yield (ExitCode.Success)
       
 
 
