@@ -6,11 +6,13 @@ import pureconfig.{ConfigReader, ConfigSource}
 
 object Config:
   
-  case class NodeConfig(db: DbConfig, crypto: CryptoConfig, transactionsPerBlock: Long) derives ConfigReader
+  case class NodeConfig(db: DbConfig, crypto: CryptoConfig, server: ServerConfig, transactionsPerBlock: Long) derives ConfigReader
 
   case class CryptoConfig(privateKey: String) derives ConfigReader
 
   case class DbConfig(driver: String, jdbcUrl: String, user: Option[String], password: Option[String], maxSessions: Int) derives ConfigReader
+  
+  case class ServerConfig(grpcServerAddress: String, grpcPort: Int )
 
   lazy val nodeConfig: NodeConfig = ConfigSource
     .default
