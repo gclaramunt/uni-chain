@@ -1,9 +1,39 @@
 # uni-chain
 
+Please submit the project as a public GitHub repository, containing a README explaining how
+to run the project (including tests) the architectural design and decisions made, and how this
+project would be extended for production readiness.
+
+
+## Intro
+Unichain is a single node blockchain. Blocks are generated after a certain amount of transactions is received. 
+Transactions and blocks are stored in a database (right now it uses H2) and the current state is kept in memory. 
+
+
+### Possible Enhancements
+  * Maybe a block can be closed if a certain time passes without new transactions.
+  * Reject transactions from and to the same address to prevent spam.
+  * As the network grow, keeping all balances in memory can become impossible, so it can be replaced with direct queries to the db.   
+  * Better logging
+    
+
+## Building and testing
+To build, only java ( I've used openjdk 22.0.2 ) and sbt are needed.
+To build the code:
+```console
+sbt compile
+```
+The code includes munit test suites to cover different scenarios, to run them use:
+```console
+sbt test
+```
+
+To assemble the fat jar use:
+```console
+sbt assembly
+```
 
 openssl ecparam -name prime256v1 -genkey -noout -out ecdsa_private_key.pem
-
-openssl ec -in ecdsa_private_key.pem -pubout -out ecdsa_public_key.pem
 
 ## only for testing purposes
 
