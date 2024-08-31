@@ -17,9 +17,9 @@ object LedgerDB:
   
 class LedgerDBImpl[F[_]: MonadCancelThrow](xa: Transactor[F]) extends LedgerDB[F]:
 
-  implicit val hashMeta: Meta[Hash] = Meta[Array[Byte]].imap(Hash.from)(Hash.value)
-  implicit val sigMeta: Meta[Sig] = Meta[Array[Byte]].imap(Sig.apply)(Sig.value)
-  implicit val addressMeta: Meta[Address] = Meta[String].imap(Address.apply)(Address.value)
+  given Meta[Hash] = Meta[Array[Byte]].imap(Hash.from)(Hash.value)
+  given Meta[Sig] = Meta[Array[Byte]].imap(Sig.apply)(Sig.value)
+  given Meta[Address] = Meta[String].imap(Address.apply)(Address.value)
 
   def getLastBlock: F[Block] = 
     sql"SELECT id, hash, previous_hash, signature FROM blocks order by id desc limit 1"
