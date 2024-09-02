@@ -13,7 +13,7 @@ package object unichain:
       |-----END EC PRIVATE KEY-----
       |""".stripMargin
   
-  val (serverPrvKey, serverPubKey) = decodePEMKeys(serverPrvKeyStr)
+  val (serverPrvKey, serverPubKey) = decodePEMKeys(serverPrvKeyStr).get
 
   val (w1PrvKey, w1PubKey) = decodePEMKeys(
     """
@@ -22,7 +22,7 @@ package object unichain:
       |AwEHoUQDQgAEH8d8OeXKt7orLzIVH5IwCRVLnWLPbihFz34OH3y2qDEgGJSudsM2
       |bbE8vHLiv7koyHgEgk0C0Sg0Xl+VyRToNw==
       |-----END EC PRIVATE KEY-----
-      |""".stripMargin)
+      |""".stripMargin).get
 
   val (w2PrvKey, w2PubKey) = decodePEMKeys(
     """
@@ -31,4 +31,4 @@ package object unichain:
       |AwEHoUQDQgAE/7QUbTYabwOR98waCxiPpuVVXvqko4PxaEuEuFfh4wCvRhaSMZAS
       |uJNvQMxu2ZBA/odSVi9MTVYMmJ9aGZWBTA==
       |-----END EC PRIVATE KEY-----
-      |""".stripMargin)
+      |""".stripMargin).get

@@ -12,9 +12,8 @@ import gclaramunt.unichain.store.LedgerDB
 class UnichainService[F[_] : MonadCancelThrow](config: NodeConfig)(refs: Ref[F, (Block, Map[Address, BigDecimal], Seq[Transaction])], ledgerDB: LedgerDB[F]):
   private val bOps = BlockchainOps(config.crypto)
   def submitTx(tx: Transaction): F[Unit] =
-    val isValid = bOps.validate(tx)
     for
-        // isValid <- MonadCancelThrow[F].fromTry(bOps.validate(tx))
+        isValid <- MonadCancelThrow[F].fromTry(BlockchainOps.validate(tx))
         _ <- if !isValid then
           MonadCancelThrow[F].raiseError(new RuntimeException("Invalid transaction signature"))
         else
@@ -29,13 +28,13 @@ class UnichainService[F[_] : MonadCancelThrow](config: NodeConfig)(refs: Ref[F, 
                 if updatedMemPool.size < config.transactionsPerBlock then
                   ((lastBlock, updatedBalances, updatedMemPool), ledgerDB.addTransaction(lastBlock.id, tx).map(_ => ()))
                 else 
-                  bOps.newBlock(lastBlock, updatedMemPool).map { newBlock =>
+                  bOps.newBlock(lastBlock, updatedMemPool).map: newBlock =>
                     val dbUpdate = for
                       _ <- ledgerDB.addBlock(newBlock)
                       _ <- ledgerDB.addTransaction(newBlock.id, tx)
                     yield ()
                     ((newBlock, updatedBalances, Seq()), dbUpdate)
-                  }.fold( err =>((lastBlock, balances, memPool), MonadCancelThrow[F].raiseError(new Exception(err.toString))), identity)
+                  .fold( err =>((lastBlock, balances, memPool), MonadCancelThrow[F].raiseError(new Exception(err.toString))), identity)
               else 
                 ((lastBlock, balances, memPool), MonadCancelThrow[F].raiseError(new RuntimeException("Source final balance can't be less than 0")))
     yield ()

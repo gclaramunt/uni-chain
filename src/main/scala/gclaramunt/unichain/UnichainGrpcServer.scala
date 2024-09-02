@@ -48,7 +48,8 @@ class UniChainServiceGrpcImpl[F[_]: Applicative, A](svc: UnichainService[F]) ext
       request.nonce,
       Hash.from(request.hash.toByteArray),
       Sig(request.signature.toByteArray))
-    svc.submitTx(tx).map { _ => TxResponse(true, "success") }
+    svc.submitTx(tx).map: 
+      _ => TxResponse(true, "success") 
 
   def addressBalance(request: BalanceRequest, ctx: A): F[BalanceResponse] =
     svc.addressBalance(Address(request.address)).map(obd => BalanceResponse.of(obd.map(_.toString)))
