@@ -8,7 +8,7 @@ import gclaramunt.unichain.blockchain.CryptoOps.{decodePEMKeys, pubKeyToAddress}
 import gclaramunt.unichain.blockchain.CryptoTypes.{Address, Hash, Sig}
 import io.grpc.{ManagedChannel, Metadata}
 import org.bouncycastle.util.encoders.Base64
-import unichain.{BalanceRequest, BalanceResponse, BlockResponse, Empty, TxRequest, TxResponse, UniChainServiceFs2Grpc}
+import unichain.*
 
 object UnichainGrpcClient extends IOApp  {
 
@@ -16,8 +16,8 @@ object UnichainGrpcClient extends IOApp  {
     managedChannelResource.flatMap(UniChainServiceFs2Grpc.stubResource[IO]).use(svc => runProgram(svc, args))
 
 
+  import fs2.grpc.syntax.all.*
   import io.grpc.netty.shaded.io.grpc.netty.NettyChannelBuilder
-  import fs2.grpc.syntax.all._
 
   val managedChannelResource: Resource[IO, ManagedChannel] =
     NettyChannelBuilder
@@ -41,21 +41,25 @@ object UnichainGrpcClient extends IOApp  {
       )
 
     def sendTxAddRequest(destinationAddress: String, amount: BigDecimal): IO[ExitCode] =
-      val (walletPrvKey, walletPubKey) = decodePEMKeys(System.getenv("WALLET_PRIVATE_KEY"))
-      val sourceAddress = pubKeyToAddress(walletPubKey)
-      val nonce = System.currentTimeMillis()
-      val tx = buildTx(sourceAddress, Address(destinationAddress), amount, nonce, walletPrvKey)
-      val txRequest = TxRequest(Address.value(tx.source), destinationAddress, amount.toString, nonce, ByteString.copyFrom(Hash.value(tx.hash)), ByteString.copyFrom(Sig.value(tx.signature)))
-      stub.txAdd(txRequest, new Metadata()).map(
-        response =>
-          println(s"Response: ${response.message}")
-          if response.success then
-            println("Success")
-            ExitCode.Success
-          else
-            println("Failure")
-            ExitCode.Error
-      )
+      for 
+        txRequest <- IO.fromTry( 
+          for 
+            (walletPrvKey, walletPubKey) <- decodePEMKeys(System.getenv("WALLET_PRIVATE_KEY"))
+            sourceAddress = pubKeyToAddress(walletPubKey)
+            nonce = System.currentTimeMillis()
+            tx <- buildTx(sourceAddress, Address(destinationAddress), amount, nonce, walletPrvKey)
+          yield TxRequest(Address.value(tx.source), destinationAddress, amount.toString, nonce, ByteString.copyFrom(Hash.value(tx.hash)), ByteString.copyFrom(Sig.value(tx.signature)))
+        )
+        response <- stub.txAdd(txRequest, new Metadata())
+      yield
+            println(s"Response: ${response.message}")
+            if response.success then
+              println("Success")
+              ExitCode.Success
+            else
+              println("Failure")
+              ExitCode.Error
+        
 
     args match {
       case Nil => sendLastBlockRequest()

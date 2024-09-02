@@ -17,14 +17,17 @@ object Genesis extends IOApp:
     val bOps = BlockchainOps(nodeConfig.crypto)
     val treasuryAddress = pubKeyToAddress(bOps.publicKey)
 
-    val treasuryTx = buildTx(treasuryAddress, treasuryAddress, intialTreasury,0, bOps.privateKey)
+    val treasuryTx = buildTx(treasuryAddress, treasuryAddress, intialTreasury,0, bOps.privateKey).get
 
     val newId = 0
-    val newBlockHash = blockHash(newId, Seq(treasuryTx))
-    val genesisBlock = buildBlock(newId,Seq(treasuryTx), newBlockHash, bOps.privateKey )
+    
     fromHikariConfig[IO](Config.hikariConfig).use: xa =>
         val ledgerDb = LedgerDB(xa)
         for
+          genesisBlock <- IO.fromTry(for 
+                            newBlockHash <- blockHash(newId, Seq(treasuryTx))
+                            genesisBlock <- buildBlock(newId,Seq(treasuryTx), newBlockHash, bOps.privateKey )
+                          yield genesisBlock)  
           _ <- Schema.blockTable.transact(xa)
           _ <- Schema.txTable.transact(xa)
           _ <- ledgerDb.addBlock(genesisBlock)
