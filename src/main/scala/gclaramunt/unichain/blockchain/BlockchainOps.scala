@@ -7,13 +7,11 @@ import gclaramunt.unichain.blockchain.CryptoOps.{addressToPubKey, decodePEMKeys,
 import gclaramunt.unichain.blockchain.CryptoTypes.{Address, Hash, longToBytes}
 import gclaramunt.unichain.{Config, GenericUnichainError, UnichainError}
 
-import java.security.PrivateKey
+import java.security.{PrivateKey, PublicKey}
 import scala.util.Try
 
-class BlockchainOps(pemKey: String):
-  
-  val (privateKey, publicKey) = decodePEMKeys(pemKey).get
-  
+class BlockchainOps(val privateKey: PrivateKey, val publicKey: PublicKey):
+
   def newBlock(currentBlock: Block, memPool: Seq[Transaction]): Either[UnichainError, Block] =
     val currentBlockHash = currentBlock.hash
     for
@@ -23,32 +21,34 @@ class BlockchainOps(pemKey: String):
     yield newBlock
 
 
-    
 object BlockchainOps:
 
-  def apply(cfg: CryptoConfig) = new BlockchainOps(cfg.privateKey)
+  def fromConfig(cfg: CryptoConfig): Try[BlockchainOps] =
+    decodePEMKeys(cfg.privateKey).map((prv, pub) => new BlockchainOps(prv, pub))
+
+  def fromPEM(pemKey: String): Try[BlockchainOps] =
+    decodePEMKeys(pemKey).map((prv, pub) => new BlockchainOps(prv, pub))
 
   def validate(tx: Transaction): Try[Boolean] =
-    for 
-      pk <- addressToPubKey(tx.source) 
+    for
+      pk <- addressToPubKey(tx.source)
       isValid <-CryptoOps.validate(Hash.value(tx.hash), tx.signature, pk)
     yield isValid
-
 
   def blockHash(id: Long, txs: Seq[Transaction]): Try[Hash] =
     hash(longToBytes(id) ++ txs.flatMap(t => Hash.value(t.hash)))
 
-  def transactionHash(destination: Address, amount: BigDecimal, nonce: Long): Try[Hash] =
-    hash(Address.value(destination).getBytes ++ amount.toString().getBytes ++  longToBytes(nonce))
+  def transactionHash(source: Address, destination: Address, amount: BigDecimal, nonce: Long): Try[Hash] =
+    hash(Address.value(source).getBytes ++ Address.value(destination).getBytes ++ amount.toString().getBytes ++ longToBytes(nonce))
 
   def buildTx(source: Address, dest: Address, amount: BigDecimal, nonce: Long, privateKey: PrivateKey): Try[Transaction] =
     for
-      txHash <- transactionHash(dest, amount, nonce)
+      txHash <- transactionHash(source, dest, amount, nonce)
       sig <- sign(Hash.value(txHash), privateKey)
     yield Transaction(source, dest, amount, nonce, txHash, sig)
 
   def buildBlock(newId: Long, memPool: Seq[Transaction], currentBlockHash: Hash, privateKey: PrivateKey): Try[Block] =
-    for 
+    for
       newBlockHash <- blockHash(newId, memPool)
       // hash and sign the previous and current block hashes to prevent tampering
       hashData <- hash(Hash.value(currentBlockHash) ++ Hash.value(newBlockHash))

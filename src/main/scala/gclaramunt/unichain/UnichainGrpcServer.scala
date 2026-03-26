@@ -1,6 +1,6 @@
 package gclaramunt.unichain
 
-import cats.Applicative
+import cats.MonadThrow
 import cats.effect.std.Dispatcher
 import cats.effect.{Async, IO, IOApp, Resource}
 import cats.syntax.all.*
@@ -11,9 +11,12 @@ import gclaramunt.unichain.blockchain.CryptoTypes.{Address, Hash, Sig}
 import gclaramunt.unichain.blockchain.Transaction
 import gclaramunt.unichain.store.LedgerDB
 import io.grpc.{Server, ServerServiceDefinition}
+import org.slf4j.LoggerFactory
 import unichain.*
 
 object UnichainServiceGrpcServer extends IOApp.Simple:
+
+  private val logger = LoggerFactory.getLogger(getClass)
 
   import fs2.grpc.syntax.all.*
   import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder
@@ -27,7 +30,7 @@ object UnichainServiceGrpcServer extends IOApp.Simple:
     .resource[IO]
     .evalMap(server => IO {
       val s= server.start()
-      println("Server started")
+      logger.info("Server started on port {}", Config.nodeConfig.server.grpcPort)
       s
     })
 
@@ -36,10 +39,11 @@ object UnichainServiceGrpcServer extends IOApp.Simple:
     dispatcher <- Dispatcher.parallel[IO]
     svc <-unichainService(xa, dispatcher)
     server <- serverResource(svc)
-  yield server).useForever.recover { e => println(e)}
+  yield server).useForever.handleErrorWith: e =>
+    IO(logger.error("Server failed", e)) *> IO.raiseError(e)
 
 
-class UniChainServiceGrpcImpl[F[_]: Applicative, A](svc: UnichainService[F]) extends  UniChainServiceFs2Grpc[F, A]:
+class UniChainServiceGrpcImpl[F[_]: MonadThrow, A](svc: UnichainService[F]) extends  UniChainServiceFs2Grpc[F, A]:
   def txAdd(request: TxRequest, ctx: A): F[TxResponse] =
     val tx = Transaction(
       Address(request.source),
@@ -48,8 +52,9 @@ class UniChainServiceGrpcImpl[F[_]: Applicative, A](svc: UnichainService[F]) ext
       request.nonce,
       Hash.from(request.hash.toByteArray),
       Sig(request.signature.toByteArray))
-    svc.submitTx(tx).map: 
-      _ => TxResponse(true, "success") 
+    svc.submitTx(tx)
+      .map(_ => TxResponse(true, "success"))
+      .handleError(e => TxResponse(false, e.getMessage))
 
   def addressBalance(request: BalanceRequest, ctx: A): F[BalanceResponse] =
     svc.addressBalance(Address(request.address)).map(obd => BalanceResponse.of(obd.map(_.toString)))
@@ -57,5 +62,3 @@ class UniChainServiceGrpcImpl[F[_]: Applicative, A](svc: UnichainService[F]) ext
   def lastBlock(request: Empty, ctx: A): F[BlockResponse] =
     def hashToByteString(h:Hash) = ByteString.copyFrom(Hash.value(h))
     svc.lastValidBlock().map(block => BlockResponse(block.id,hashToByteString(block.hash), hashToByteString(block.previousHash), ByteString.copyFrom(Sig.value(block.signature))))
-
-

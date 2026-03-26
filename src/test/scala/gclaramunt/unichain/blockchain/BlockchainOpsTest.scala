@@ -11,10 +11,10 @@ import munit.FunSuite
 
 class BlockchainOpsTest extends FunSuite:
 
-  val bo = new BlockchainOps(serverPrvKeyStr)
+  val bo = BlockchainOps.fromPEM(serverPrvKeyStr).get
 
   test("newBlock with transactions"):
-    (for 
+    (for
       prevHash <- BlockchainOps.blockHash(1, Seq())
       prevSig <- sign(Hash.value(prevHash), bo.privateKey)
       previous = Block(1, prevHash, Hash.from(Array.empty[Byte]), prevSig)
@@ -32,14 +32,14 @@ class BlockchainOpsTest extends FunSuite:
       signed <- sign(hashBytes, bo.privateKey)
       newBlock <- toTry(bo.newBlock(previous, txs))
       validated <- validate(hashBytes, newBlock.signature, bo.publicKey)
-    yield 
+    yield
       assertEquals(newBlock.id, 2L)
       assertEquals(Hash.value(newBlock.previousHash).toSeq, Hash.value(prevHash).toSeq)
       assertEquals(validated, true)
     ).get
 
   test("validate transaction"):
-    val isValid = for 
+    val isValid = for
       tx <- buildTx(pubKeyToAddress(w1PubKey), Address("doesn't matter"), BigDecimal(10.00),1, w1PrvKey)
       isValid <-BlockchainOps.validate(tx)
     yield isValid
@@ -51,6 +51,3 @@ class BlockchainOpsTest extends FunSuite:
       isValid <- BlockchainOps.validate(tx)
     yield isValid
     assertEquals(isValid.get, false)
-
-
-

@@ -12,7 +12,7 @@ object Config:
 
   case class DbConfig(driver: String, jdbcUrl: String, user: Option[String], password: Option[String], maxSessions: Int) derives ConfigReader
   
-  case class ServerConfig(grpcServerAddress: String, grpcPort: Int )
+  case class ServerConfig(grpcServerAddress: String, grpcPort: Int ) derives ConfigReader
 
   lazy val nodeConfig: NodeConfig = ConfigSource
     .default
